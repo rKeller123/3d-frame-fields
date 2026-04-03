@@ -82,7 +82,7 @@ app.layout = html.Div([
 
     ], style={"display": "flex", "gap": "40px", "padding": "16px 24px"}),
 
-    dcc.Graph(id="3d-surface-plot", style={"height": "90vh"})
+    dcc.Graph(id="3d-surface-plot", style={"height": "80vh"})
 ])
 
 @callback(
