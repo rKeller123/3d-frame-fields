@@ -1,8 +1,6 @@
 import math
 import cmath
 
-from scipy.special import sph_harm_y
-
 def legendre(l: int, m: int, x: float):
     assert l >= 0, f"l is negative: {l}"
     assert -l <= m <= l, f"m is not in the range required: -{l} <= {m} <= {l}"
@@ -10,16 +8,14 @@ def legendre(l: int, m: int, x: float):
     sum_val = 0
     for k in range((l - m_abs) // 2 + 1):
         sum_val += (
-                math.pow(-1, k) *
-                (math.factorial(2 * l - 2 * k) /
-                 (math.factorial(k) * math.factorial(l - k) * math.factorial(l - m_abs - 2 * k))
-                 ) *
-                math.pow(x, l - m_abs - 2 * k)
+        (math.pow(-1, k) / (math.factorial(k) * math.factorial(l - k))) *
+        (math.factorial(2 * (l - k)) / math.factorial(l - 2*k - m)) *
+        math.pow(x, l - 2 * k - m)
         )
     leg_abs = (math.pow(-1, m_abs) / (math.pow(2, l))) * math.pow(1 - x * x, m_abs / 2) * sum_val
 
     if m < 0:
-        return math.pow(-1, m) * (math.factorial(l - m_abs) / (math.factorial(l + m_abs) * math.pow(2, l))) * leg_abs
+        return math.pow(-1, m) * (math.factorial(l - m_abs) / math.factorial(l + m_abs)) * leg_abs
     return leg_abs
 
 def sph_harm(l: int, m: int, theta: float, phi: float):
@@ -30,7 +26,7 @@ def sph_harm(l: int, m: int, theta: float, phi: float):
         math.factorial(l - m) / math.factorial(l + m)
     ) * legendre(l, m, math.cos(theta)) * cmath.exp(1j * m * phi)
 
-def sph_harm_real(l: int, m: int, phi: float, theta: float):
+def sph_harm_real(l: int, m: int, theta: float, phi: float):
     assert l >= 0, f"l is negative: {l}"
     assert -l <= m <= l, f"m is not in the range required: -{l} <= {m} <= {l}"
     if m < 0:
