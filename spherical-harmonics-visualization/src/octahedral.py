@@ -9,37 +9,37 @@ import math
 from dash import Dash, html, dcc, callback, Output, Input
 
 from spherical_harmonics import sph_harm_real
-from wigner_d import rotate_sh
+from rotations import rotate_octahedral
 
-
-n = 100
-
-# Create grid
-theta = np.linspace(0, math.pi, num=n)
-phi = np.linspace(0, 2 * math.pi, num=n)
-
-theta_grid, phi_grid = np.meshgrid(theta, phi)
-
-# Flatten ONLY for computation
-theta_flat = theta_grid.flatten()
-phi_flat = phi_grid.flatten()
-
-coords = np.stack((theta_flat, phi_flat), axis=-1)
+def canonical_octahedral():
+    return np.array([0, 0, 0, 0, math.sqrt(7 / 12), 0, 0, 0, math.sqrt(5 / 12)])
 
 def generate_sh_values(alpha, beta, gamma):
-    a_0 = np.array([0, 0, 0, 0, math.sqrt(7 / 12), 0, 0, 0, math.sqrt(5 / 12)]) # reference frame
+    n = 100
+
+    # Create grid
+    theta = np.linspace(0, math.pi, num=n)
+    phi = np.linspace(0, 2 * math.pi, num=n)
+
+    theta_grid, phi_grid = np.meshgrid(theta, phi)
+
+    # Flatten ONLY for computation
+    theta_flat = theta_grid.flatten()
+    phi_flat = phi_grid.flatten()
+
+    # reference frame
+    a_0 = canonical_octahedral()
 
     # rotation in euler angles
-    R = rotate_sh(alpha, beta, gamma)
-    a = R @ a_0
+    a = rotate_octahedral(a_0, alpha, beta, gamma)
 
-    l = (len(a_0) - 1) // 2
+    l = (len(a) - 1) // 2
 
     # Compute results (vectorized instead of loop)
     sh_values = np.array([
-        sum(a[j + l] * sph_harm_real(l, j, phi_flat[i], theta_flat[i])
+        sum(a[j + l] * sph_harm_real(l, j, theta_flat[i], phi_flat[i])
             for j in range(-l, l + 1))
-        for i in range(coords.shape[0])
+        for i in range(theta_flat.size)
     ])
 
     # Reshape back to grid
@@ -109,5 +109,4 @@ def update_graph(alpha, beta, gamma):
 
     return figure
 
-if __name__ == "__main__":
-    app.run(debug=True)
+app.run(debug=True)
