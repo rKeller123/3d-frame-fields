@@ -13,9 +13,9 @@ from rotations import rotate_odeco
 
 
 def canonical_odeco(l_x, l_y, l_z):
-    assert l_x > 0, "stretching ratio x has to be positive"
-    assert l_y > 0, "stretching ratio y has to be positive"
-    assert l_z > 0, "stretching ratio z has to be positive"
+    assert l_x >= 0, "stretching ratio x has to be positive"
+    assert l_y >= 0, "stretching ratio y has to be positive"
+    assert l_z >= 0, "stretching ratio z has to be positive"
 
     # reference frame expressed in SH basis
     a_0 = [2/5 * math.sqrt(math.pi) * (l_x + l_y + l_z), # band 0
@@ -111,7 +111,7 @@ app.layout = html.Div([
         ], style={"flex": 1}),
 
     ], style={"display": "flex", "gap": "40px", "padding": "16px 24px"}),
-    dcc.Graph(id="3d-surface-plot", style={"height": "80vh"})
+    dcc.Graph(id="3d-surface-plot", style={"height": "70vh"})
 ])
 
 @callback(
@@ -125,7 +125,6 @@ app.layout = html.Div([
 )
 def update_graph(l_x, l_y, l_z, alpha, beta, gamma):
     sh_values, x, y, z = generate_sh_values(l_x, l_y, l_z, alpha, beta, gamma)
-    print(sh_values)
 
     figure = go.Figure(
         data=[go.Surface(x=x, y=y, z=z, surfacecolor=sh_values)]

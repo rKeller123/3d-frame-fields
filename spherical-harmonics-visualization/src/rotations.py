@@ -1,5 +1,3 @@
-from zipimport import alt_path_sep
-
 import numpy as np
 from scipy.linalg import block_diag
 from math import *
@@ -46,7 +44,7 @@ rotate_z_9d = lambda gamma: np.array([
 ])
 
 rotate_y_9d = lambda beta: rot_x_pi_over_two_band_4 @ rotate_z_9d(beta) @ rot_x_pi_over_two_band_4.T
-rotate_x_9d = lambda alpha: rotate_y_9d(alpha).T @ rotate_z_9d(alpha) @ rotate_y_9d(alpha)
+rotate_x_9d = lambda alpha: rotate_y_9d(pi / 2).T @ rotate_z_9d(alpha) @ rotate_y_9d(pi / 2)
 
 rot_x_pi_over_two_bands_combined = block_diag(1, rot_x_pi_over_2_band_2, rot_x_pi_over_two_band_4)
 
