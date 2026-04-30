@@ -1,5 +1,6 @@
 #include "linalg.h"
 
+// wigner matrices
 
 const mat5 rot_x_pi_over_2_5d{
     {0, 0, 0, -1, 0},
@@ -47,6 +48,70 @@ mat9 rotation_z_9d(double gamma)
     };
 }
 
+// lie exponentiation and rotation
+
+mat5 L_x_5d{
+    {0, 0, 0, -1, 0},
+    {0, 0, -sqrt(3), 0, -1},
+    {0, sqrt(3), 0, 0, 0},
+    {1, 0, 0, 0, 0},
+    {0, 1, 0, 0, 0}
+};
+
+mat5 L_y_5d{
+    {0, -1, 0, 0, 0},
+    {1, 0, 0, 0, 0},
+    {0, 0, 0, sqrt(3), 0},
+    {0, 0, -sqrt(3), 0, 1},
+    {0, 0, 0, -1, 0},
+};
+
+mat5 L_z_5d{
+    {0, 0, 0, 0, 2},
+    {0, 0, 0, 1, 0},
+    {0, 0, 0, 0, 0},
+    {0, -1, 0, 0, 0},
+    {-2, 0, 0, 0, 0}
+};
+
+mat9 L_x_9d{
+    {0, 0, 0, 0, 0, 0, 0, -sqrt(2), 0},
+    {0, 0, 0, 0, 0, 0, -sqrt(7.0 / 2), 0, -sqrt(2)},
+    {0, 0, 0, 0, 0, -3/sqrt(2), 0, -sqrt(7.0 / 2), 0},
+    {0, 0, 0, 0, -sqrt(10), 0, -3 / sqrt(2), 0, 0},
+    {0, 0, 0, sqrt(10), 0, 0, 0, 0, 0},
+    {0, 0, 3/sqrt(2), 0, 0, 0, 0, 0, 0},
+    {0, sqrt(7.0 / 2), 0, 3/sqrt(2), 0, 0, 0, 0, 0},
+    {sqrt(2), 0, sqrt(7.0 / 2), 0, 0, 0, 0, 0, 0},
+    {0, sqrt(2), 0, 0, 0, 0, 0, 0, 0},
+};
+
+mat9 L_y_9d{
+    {0, -sqrt(2), 0, 0, 0, 0, 0, 0, 0},
+    {sqrt(2), 0, -sqrt(7.0/2), 0, 0, 0, 0, 0, 0},
+    {0, sqrt(7.0 / 2), 0, -3/sqrt(2), 0, 0, 0, 0, 0},
+    {0, 0, 3/sqrt(2), 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, sqrt(10), 0, 0, 0},
+    {0, 0, 0, 0, -sqrt(10), 0, 3 / sqrt(2), 0, 0},
+    {0, 0, 0, 0, 0, -3/sqrt(2), 0, sqrt(7.0 / 2), 0},
+    {0, 0, 0, 0, 0, 0, -sqrt(7.0 / 2), 0, sqrt(2)},
+    {0, 0, 0, 0, 0, 0, 0, -sqrt(2), 0},
+};
+
+mat9 L_z_9d{
+    {0, 0, 0, 0, 0, 0, 0, 0, 4},
+    {0, 0, 0, 0, 0, 0, 0, 3, 0},
+    {0, 0, 0, 0, 0, 0, 2, 0, 0},
+    {0, 0, 0, 0, 0, 1, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, -1, 0, 0, 0, 0, 0},
+    {0, 0, -2, 0, 0, 0, 0, 0, 0},
+    {0, -3, 0, 0, 0, 0, 0, 0, 0},
+    {-4, 0, 0, 0, 0, 0, 0, 0, 0}
+};
+
+// methods
+
 mat15 rotation_z_15d(double gamma)
 {
     mat5 m5 = rotation_z_5d(gamma);
@@ -80,6 +145,41 @@ mat15 rotation_15d(double alpha, double beta, double gamma)
     return rotation_x_15d(alpha) * rotation_y_15d(beta) * rotation_z_15d(gamma);
 }
 
+mat15 lie_x_15d()
+{
+    mat15 m = mat15::Zero();
+
+    m.block<5, 5>(1, 1) = L_x_5d;
+    m.block<9, 9>(6, 6) = L_x_9d;
+
+    return m;
+}
+
+mat15 lie_y_15d()
+{
+    mat15 m = mat15::Zero();
+
+    m.block<5, 5>(1, 1) = L_y_5d;
+    m.block<9, 9>(6, 6) = L_y_9d;
+
+    return m;
+}
+
+mat15 lie_z_15d()
+{
+    mat15 m = mat15::Zero();
+
+    m.block<5, 5>(1, 1) = L_z_5d;
+    m.block<9, 9>(6, 6) = L_z_9d;
+
+    return m;
+}
+
+mat15 rotation_15d_lie(double alpha, double beta, double gamma)
+{
+    return exp(alpha * lie_x_15d()) * exp(beta * lie_y_15d()) * exp(gamma * lie_z_15d());
+}
+
 double dot(vec15 v0, vec15 v1)
 {
     return v0.dot(v1);
@@ -88,4 +188,9 @@ double dot(vec15 v0, vec15 v1)
 double norm(vec15 v)
 {
     return v.norm();
+}
+
+mat15 exp(mat15 m)
+{
+    return m.exp();
 }
