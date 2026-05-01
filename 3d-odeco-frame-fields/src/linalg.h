@@ -1,3 +1,5 @@
+#pragma once
+
 #include <initializer_list>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
@@ -30,6 +32,7 @@ mat15 rotation_z_15d(double gamma);
 mat15 rotation_y_15d(double beta);
 mat15 rotation_x_15d(double alpha);
 mat15 rotation_15d(double alpha, double beta, double gamma);
+mat15 rotation_15d(const vec3& theta);
 
 mat15 lie_x_15d();
 mat15 lie_y_15d();
@@ -38,11 +41,16 @@ mat15 lie_z_15d();
 mat15 rotation_15d_lie(double alpha, double beta, double gamma);
 
 // vector operations
+template<typename DerivedV0, typename DerivedV1>
+inline double dot(const Eigen::MatrixBase<DerivedV0>& v0, const Eigen::MatrixBase<DerivedV1>& v1)
+{
+	return v0.dot(v1);
+}
 
-
-double dot(vec15 v0, vec15 v1);
-double norm(vec15 v);
+double norm(const vec15& v);
 
 // matrix operations
 
-mat15 exp(mat15 m);
+mat15 exp(const mat15& m);
+
+vec6 eivals(const mat6& m);

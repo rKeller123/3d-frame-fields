@@ -145,6 +145,11 @@ mat15 rotation_15d(double alpha, double beta, double gamma)
     return rotation_x_15d(alpha) * rotation_y_15d(beta) * rotation_z_15d(gamma);
 }
 
+mat15 rotation_15d(const vec3& theta)
+{
+    return rotation_15d(theta.x(), theta.y(), theta.z());
+}
+
 mat15 lie_x_15d()
 {
     mat15 m = mat15::Zero();
@@ -180,17 +185,23 @@ mat15 rotation_15d_lie(double alpha, double beta, double gamma)
     return exp(alpha * lie_x_15d()) * exp(beta * lie_y_15d()) * exp(gamma * lie_z_15d());
 }
 
-double dot(vec15 v0, vec15 v1)
-{
-    return v0.dot(v1);
-}
-
-double norm(vec15 v)
+double norm(const vec15& v)
 {
     return v.norm();
 }
 
-mat15 exp(mat15 m)
+mat15 exp(const mat15& m)
 {
     return m.exp();
+}
+
+vec6 eivals(const mat6& m)
+{
+    Eigen::SelfAdjointEigenSolver<mat6> solver(m);
+
+    if (solver.info() != Eigen::Success) {
+        throw std::runtime_error("Eigenvalue decomposition failed");
+    }
+
+    return solver.eigenvalues();
 }

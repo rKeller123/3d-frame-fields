@@ -6,35 +6,21 @@ using namespace std;
 
 int main()
 {
-	double l_x = 1.0;
-	double l_y = 1.0;
-	double l_z = 1.0;
+	odeco_frame_description target_frame = {
+		.theta = vec3(numbers::pi / 2, 3 * numbers::pi / 4, 3 * numbers::pi / 24),
+		.lambda = vec3(3, 6, 9)
+	};
 
-	double alpha = 1.0;
-	double beta  = 2.0;
-	double gamma = 3.0;
+	vec15 target = odeco_frame(target_frame);
 
-	vec15 f = odeco_frame(alpha, beta, gamma, l_x, l_y, l_z);
+	odeco_frame_description projected_description = odeco_frame_project(target, 5, 1e-6);
 
-	vec15 y = vec15::Constant(1);
+	cout << "Target frame description:    " << endl << target_frame.theta << endl << endl << target_frame.lambda << endl << endl;
+	cout << "Projected frame description: " << endl << projected_description.theta << endl << endl << projected_description.lambda << endl << endl;
 
-	cout << setprecision(17);
+	double proj_loss = loss(target, projected_description);
 
-	cout << "Odeco frame: " << endl << f << endl << endl;
-
-	cout << "Objective function: " << objective_function(y, alpha, beta, gamma, l_x, l_y, l_z) << endl << endl;
-
-	cout << "Gradient: " << endl << gradient(y, alpha, beta, gamma, l_x, l_y, l_z) << endl << endl;
-
-	mat6 H = hessian(y, alpha, beta, gamma, l_x, l_y, l_z);
-
-	cout << "Hessian: " << endl << H << endl << endl;
-
-	cout << "Hessian Eigenvalues: " << endl << H.eigenvalues() << endl << endl;
-
-	cout << setprecision(5);
-	cout << "Hessian - Hessian^transpose: " << endl << H - H.transpose() << endl << endl;
-
+	cout << "Proj - Target Loss: " << proj_loss << endl << endl;
 
 	return 0;
 }

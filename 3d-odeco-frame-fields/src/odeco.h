@@ -1,14 +1,26 @@
 #pragma once
 
 #include "linalg.h"
+#include "newton.h"
 #include <numbers>
 
+struct odeco_frame_description {
+	vec3 theta;
+	vec3 lambda;
+};
 
-vec15 reference_frame(double l_x, double l_y, double l_z);
-vec15 odeco_frame(double alpha, double beta, double gamma, double l_x, double l_y, double l_z);
+odeco_frame_description operator+(const odeco_frame_description& f0, const odeco_frame_description& f1);
+odeco_frame_description operator*(double t, const odeco_frame_description& f);
 
-double objective_function(const vec15 y, double alpha, double beta, double gamma, double l_x, double l_y, double l_z);
+vec15 reference_frame(const vec3& lambda);
+vec15 odeco_frame(const odeco_frame_description& frame);
 
-vec6 gradient(const vec15 y, double alpha, double beta, double gamma, double l_x, double l_y, double l_z);
+double loss(const vec15& y, const odeco_frame_description& frame);
 
-mat6 hessian(const vec15 y, double alpha, double beta, double gamma, double l_x, double l_y, double l_z);
+vec6 compute_gradient(const vec15& y, const odeco_frame_description& frame);
+
+mat6 compute_hessian(const vec15& y, const odeco_frame_description& frame);
+
+odeco_frame_description closest_seed(const vec15& y, int max_1d_res);
+
+odeco_frame_description odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol);

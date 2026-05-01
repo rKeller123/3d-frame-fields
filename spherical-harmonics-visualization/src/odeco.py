@@ -77,51 +77,84 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Label("Stretch x", style={"fontWeight": "bold"}),
-            dcc.Slider(id="l_x", min=0, max=10, step=0.01, value=1),
+            html.Div([
+                dcc.Slider(id="l_x", min=0, max=10, step=0.01, value=1),
+                dcc.Input(id="l_x_input", type="number", value=1, step=0.01,
+                          style={"width": "70px", "marginLeft": "12px"}),
+            ], style={"display": "flex", "alignItems": "center"}),
         ], style={"flex": 1}),
 
         html.Div([
             html.Label("Stretch y", style={"fontWeight": "bold"}),
-            dcc.Slider(id="l_y", min=0, max=10, step=0.01, value=1),
+            html.Div([
+                dcc.Slider(id="l_y", min=0, max=10, step=0.01, value=1),
+                dcc.Input(id="l_y_input", type="number", value=1, step=0.01,
+                          style={"width": "70px", "marginLeft": "12px"}),
+            ], style={"display": "flex", "alignItems": "center"}),
         ], style={"flex": 1}),
 
         html.Div([
             html.Label("Stretch z", style={"fontWeight": "bold"}),
-            dcc.Slider(id="l_z", min=0, max=10, step=0.01, value=1),
+            html.Div([
+                dcc.Slider(id="l_z", min=0, max=10, step=0.01, value=1),
+                dcc.Input(id="l_z_input", type="number", value=1, step=0.01,
+                          style={"width": "70px", "marginLeft": "12px"}),
+            ], style={"display": "flex", "alignItems": "center"}),
         ], style={"flex": 1}),
 
     ], style={"display": "flex", "gap": "40px", "padding": "16px 24px"}),
     html.Div([
         html.Div([
             html.Label("Rotate x", style={"fontWeight": "bold"}),
-            dcc.Slider(id="alpha", min=0, max=0.5 * math.pi, step=0.01, value=0,
-                       marks={0: '0', math.pi / 4: 'π/4', math.pi / 2: 'π/2'}),
+            html.Div([
+                dcc.Slider(id="alpha", min=-0.5 * math.pi, max=0.5 * math.pi, step=0.01, value=0,
+                           marks={0: '0', math.pi / 4: 'π/4', math.pi / 2: 'π/2'}),
+                dcc.Input(id="alpha_input", type="number", value=0, step=0.01,
+                          style={"width": "70px", "marginLeft": "12px"}),
+            ], style={"display": "flex", "alignItems": "center"}),
         ], style={"flex": 1}),
 
         html.Div([
             html.Label("Rotate y", style={"fontWeight": "bold"}),
-            dcc.Slider(id="beta", min=0, max=0.5 * math.pi, step=0.01, value=0,
-                       marks={0: '0', math.pi / 4: 'π/4', math.pi / 2: 'π/2'}),
+            html.Div([
+                dcc.Slider(id="beta", min=-0.5 * math.pi, max=0.5 * math.pi, step=0.01, value=0,
+                           marks={0: '0', math.pi / 4: 'π/4', math.pi / 2: 'π/2'}),
+                dcc.Input(id="beta_input", type="number", value=0, step=0.01,
+                          style={"width": "70px", "marginLeft": "12px"}),
+            ], style={"display": "flex", "alignItems": "center"}),
         ], style={"flex": 1}),
 
         html.Div([
             html.Label("Rotate z", style={"fontWeight": "bold"}),
-            dcc.Slider(id="gamma", min=0, max=0.5 * math.pi, step=0.01, value=0,
-                       marks={0: '0', math.pi / 4: 'π/4', math.pi / 2: 'π/2'}),
+            html.Div([
+                dcc.Slider(id="gamma", min=-0.5 * math.pi, max=0.5 * math.pi, step=0.01, value=0,
+                           marks={0: '0', math.pi / 4: 'π/4', math.pi / 2: 'π/2'}),
+                dcc.Input(id="gamma_input", type="number", value=0, step=0.01,
+                          style={"width": "70px", "marginLeft": "12px"}),
+            ], style={"display": "flex", "alignItems": "center"}),
         ], style={"flex": 1}),
 
     ], style={"display": "flex", "gap": "40px", "padding": "16px 24px"}),
     dcc.Graph(id="3d-surface-plot", style={"height": "70vh"})
 ])
 
-@callback(
+for slider_id in ["l_x", "l_y", "l_z", "alpha", "beta", "gamma"]:
+    @app.callback(
+        Output(f"{slider_id}_input", "value"),
+        Input(slider_id, "value"),
+        prevent_initial_call=True,
+    )
+    def sync_slider_to_box(val):
+        return val
+
+@app.callback(
     Output("3d-surface-plot", "figure"),
-    Input("l_x", "value"),
-    Input("l_y", "value"),
-    Input("l_z", "value"),
-    Input("alpha", "value"),
-    Input("beta",  "value"),
-    Input("gamma", "value")
+    Input("l_x_input", "value"),
+    Input("l_y_input", "value"),
+    Input("l_z_input", "value"),
+    Input("alpha_input", "value"),
+    Input("beta_input", "value"),
+    Input("gamma_input", "value"),
 )
 def update_graph(l_x, l_y, l_z, alpha, beta, gamma):
     sh_values, x, y, z = generate_sh_values(l_x, l_y, l_z, alpha, beta, gamma)

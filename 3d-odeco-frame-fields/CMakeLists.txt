@@ -12,7 +12,7 @@ endif()
 project ("3d-odeco-frame-fields")
 
 # Add source to this project's executable.
-add_executable (3d-odeco-frame-fields "src/3d-odeco-frame-fields.cpp" "src/3d-odeco-frame-fields.h"   "src/linalg.h"  "src/linalg.cpp" "src/odeco.h" "src/odeco.cpp")
+add_executable (3d-odeco-frame-fields "src/3d-odeco-frame-fields.cpp" "src/3d-odeco-frame-fields.h"   "src/linalg.h"  "src/linalg.cpp" "src/odeco.h" "src/odeco.cpp" "src/newton.h" "src/newton.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET 3d-odeco-frame-fields PROPERTY CXX_STANDARD 20)
