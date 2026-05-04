@@ -6,19 +6,27 @@ using namespace std;
 
 int main()
 {
-	odeco_frame_description target_frame = {
-		.theta = vec3(numbers::pi / 2, 3 * numbers::pi / 4, 3 * numbers::pi / 24),
-		.lambda = vec3(3, 6, 9)
+	odeco_frame target_frame = {
+		.theta = (numbers::pi / 2) * vec3(0.25, 0.75, 0.4),
+		.lambda = vec3(1.2, 2.4, 1.1)
 	};
 
-	vec15 target = odeco_frame(target_frame);
+	vec15 target_coords = odeco_frame_coords(target_frame);
 
-	odeco_frame_description projected_description = odeco_frame_project(target, 5, 1e-6);
+	auto start = chrono::steady_clock::now();
+	int num_iter;
+	odeco_frame projected_description = odeco_frame_project(target_coords, 5, 1e-6, num_iter);
+	auto end = chrono::steady_clock::now();
 
-	cout << "Target frame description:    " << endl << target_frame.theta << endl << endl << target_frame.lambda << endl << endl;
-	cout << "Projected frame description: " << endl << projected_description.theta << endl << endl << projected_description.lambda << endl << endl;
+	chrono::duration<double> time_elapsed = end - start;
 
-	double proj_loss = loss(target, projected_description);
+	cout << "Projected in " << time_elapsed.count() << "s" << endl << endl;
+	cout << "Projected in " << num_iter << " iterations" << endl << endl;
+
+	cout << "Target frame:    " << endl << target_frame.theta << endl << endl << target_frame.lambda << endl << endl;
+	cout << "Projected frame: " << endl << projected_description.theta << endl << endl << projected_description.lambda << endl << endl;
+
+	double proj_loss = loss(target_coords, projected_description);
 
 	cout << "Proj - Target Loss: " << proj_loss << endl << endl;
 
