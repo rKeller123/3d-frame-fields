@@ -4,16 +4,27 @@
 vec6 compute_newton_step(const vec6& grad, const mat6& hess)
 {
 	double epsilon = 0.1;
+	double m = 1.0;
+	double gamma = 10.0;
+	double delta = std::max(abs(0.000015 * hess.trace()), epsilon);
 
-	vec6 eigenvalues = eivals(hess);
-	double min_ev = eigenvalues.minCoeff();
+	mat6 H_mod = hess;
 
-	min_ev = std::min(min_ev - epsilon, 0.0);
+	mat6 L;
 
-	mat6 H_mod = hess - min_ev * mat6::Identity();
+	while (true) {
+		try {
+			L = llt(H_mod);
+			break;
+		}
+		catch (const std::runtime_error& e) {
+			m = gamma * m;
+			H_mod = H_mod + m * mat6::Identity();
+		}
+	}
 
-	// TODO: use cholesky decomposition and solve for the inverse
-	return -H_mod.inverse() * grad;
+	vec6 y = L.triangularView<Eigen::Lower>().solve(-grad);
+	return L.transpose().triangularView<Eigen::Upper>().solve(y);
 }
 
 double compute_newton_decrement(const vec6& gradient, const vec6& newton_step)

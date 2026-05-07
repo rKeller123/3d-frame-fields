@@ -202,6 +202,15 @@ vec6 eivals(const mat6& m)
     if (solver.info() != Eigen::Success) {
         throw std::runtime_error("Eigenvalue decomposition failed");
     }
-
     return solver.eigenvalues();
+}
+
+mat6 llt(const mat6& m)
+{
+    Eigen::LLT<mat6> llt(m);
+
+    if (llt.info() != Eigen::Success) {
+        throw std::runtime_error("LLT Factorization failed");
+    }
+    return llt.matrixL();
 }
