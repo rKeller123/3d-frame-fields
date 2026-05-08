@@ -2,6 +2,7 @@ import subprocess
 import numpy as np
 import os
 import math
+from time import time
 
 import plotly.graph_objects as go
 from dash import Dash, html, dcc, callback, Output, Input, exceptions, ALL
@@ -108,7 +109,7 @@ app.layout = html.Div([
 
         html.Div([
             html.H3("Projection"),
-            html.P(id="num_iterations"),
+            html.P(id="info"),
             dcc.Graph(id="output-plot", style={"height": "80vh"})
         ], style={"width": "40%"}),
 
@@ -171,7 +172,7 @@ def update_input_plot(coords, overrides):
 
 @callback(
     Output("output-plot", "figure"),
-    Output("num_iterations", "children"),
+    Output("info", "children"),
     Input("input-plot", "figure"),
     Input("coordinates-store", "data"),
     Input({"type": "override-coord", "index": ALL}, "value"),
@@ -188,11 +189,13 @@ def update_output(_, coords, overrides):
             if v is not None:
                 final[i] = v
 
+    start = time()
     num_iter, projection = run_cli(final)
+    end = time()
     sh_values, x, y, z = generate_sh_values_from_coordinates(projection)
 
     fig = go.Figure(data=[go.Surface(x=x, y=y, z=z, surfacecolor=sh_values)])
-    return fig, f"{num_iter} iterations"
+    return fig, f"{num_iter} iterations | {end - start:.2f} s"
 
 
 app.run(debug=True)
