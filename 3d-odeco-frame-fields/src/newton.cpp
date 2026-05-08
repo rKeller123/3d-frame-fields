@@ -10,19 +10,15 @@ vec6 compute_newton_step(const vec6& grad, const mat6& hess)
 
 	mat6 H_mod = hess;
 
-	mat6 L;
+	Eigen::LLT<mat6> decomp = llt(H_mod);
 
-	while (true) {
-		try {
-			L = llt(H_mod);
-			break;
-		}
-		catch (const std::runtime_error& e) {
-			m = gamma * m;
-			H_mod = H_mod + m * mat6::Identity();
-		}
+	while (decomp.info() != Eigen::Success) {
+		m = gamma * m;
+		H_mod = H_mod + m * mat6::Identity();
+		decomp = llt(H_mod);
 	}
 
+	mat6 L = decomp.matrixL();
 	vec6 y = L.triangularView<Eigen::Lower>().solve(-grad);
 	return L.transpose().triangularView<Eigen::Upper>().solve(y);
 }
@@ -48,7 +44,7 @@ double compute_step_size(const vec15& y, const odeco_frame& frame, const vec6& d
 	return t;
 }
 
-odeco_frame update_frame_description(const odeco_frame& frame, const vec6& newton_step, double t)
+odeco_frame update_frame(const odeco_frame& frame, const vec6& newton_step, double t)
 {
 	odeco_frame newton_step_frame{
 		.theta = newton_step.block<3, 1>(0, 0),

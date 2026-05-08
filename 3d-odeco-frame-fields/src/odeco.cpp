@@ -1,3 +1,4 @@
+
 #include "odeco.h"
 
 
@@ -54,7 +55,12 @@ vec15 odeco_frame_coords(const odeco_frame& frame)
 double loss(const vec15& y, const odeco_frame& frame)
 {
 	vec15 f = odeco_frame_coords(frame);
-	return dot(f - y, f - y);
+	return loss(y, f);
+}
+
+double loss(const vec15& y, const vec15& frame_coords)
+{
+	return dot(frame_coords - y, frame_coords - y);
 }
 
 vec6 compute_gradient(const vec15& y, const odeco_frame& frame)
@@ -146,9 +152,17 @@ odeco_frame closest_seed(const vec15& y, int max_1d_res)
 }
 
 // TODO: consider non-negativity constraints for lambda
-odeco_frame odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
+vec15 odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
 {
-	odeco_frame current_frame = closest_seed(y, max_1d_res_seed);
+	odeco_frame seed = closest_seed(y, max_1d_res_seed);
+
+	mat15 rotation = rotation_15d(seed.theta);
+
+	vec15 target = rotation.transpose() * y;
+	odeco_frame current_frame{
+		.theta = vec3(0, 0, 0),
+		.lambda = vec3(1, 1, 1)
+	};
 
 	int max_iter = 1024;
 	num_iterations = max_iter;
@@ -157,19 +171,16 @@ odeco_frame odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol,
 	vec6 grad;
 	mat6 hess;
 	vec6 newton_step;
+	mat15 rotation_step;
 	double newton_decrement;
 	double t;
 
 	for (int i = 0; i < max_iter; i++) {
-
-		// compute current frame
-		current_frame_coords = odeco_frame_coords(current_frame);
-
 		// compute gradient
-		grad = compute_gradient(y, current_frame);
+		grad = compute_gradient(target, current_frame);
 
 		// compute hessian
-		hess = compute_hessian(y, current_frame);
+		hess = compute_hessian(target, current_frame);
 
 		// compute newton step (modify hessian to be pos. def.)
 		newton_step = compute_newton_step(grad, hess);
@@ -184,13 +195,17 @@ odeco_frame odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol,
 		}
 		
 		// line search step size
-		t = compute_step_size(y, current_frame, newton_step, grad, 1.0, 0.1, 0.9);
+		t = compute_step_size(target, current_frame, newton_step, grad, 1.0, 0.1, 0.9);
 		
 		// update frame description
-		current_frame = update_frame_description(current_frame, newton_step, t);
+		current_frame = update_frame(current_frame, newton_step, t);
 
-		// TODO: ensure that gimbal locks get avoided
+		// avoid gimbal locks: absorb rotation into target, keep current_frame.theta = 0
+		rotation_step = rotation_15d(current_frame.theta);
+		target = rotation_step.transpose() * target;
+		rotation = rotation * rotation_step;
+		current_frame.theta = vec3(0, 0, 0);
 	}
 
-	return current_frame;
+	return rotation * odeco_frame_coords(current_frame);
 }

@@ -54,4 +54,4 @@ double norm(const vec15& v);
 mat15 exp(const mat15& m);
 
 vec6 eivals(const mat6& m);
-mat6 llt(const mat6& m);
+Eigen::LLT<mat6> llt(const mat6& m);

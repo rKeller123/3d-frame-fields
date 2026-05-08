@@ -8,14 +8,14 @@ int main()
 {
 	odeco_frame target_frame = {
 		.theta = (numbers::pi / 2) * vec3(0.25, 0.75, 0.4),
-		.lambda = vec3(1.2, 2.4, 1.1)
+		.lambda = vec3(1.2, 2.4, 3.9)
 	};
 
 	vec15 target_coords = odeco_frame_coords(target_frame);
 
 	auto start = chrono::steady_clock::now();
 	int num_iter;
-	odeco_frame projected_description = odeco_frame_project(target_coords, 5, 1e-6, num_iter);
+	vec15 projected_coords = odeco_frame_project(target_coords, 5, 1e-6, num_iter);
 	auto end = chrono::steady_clock::now();
 
 	chrono::duration<double> time_elapsed = end - start;
@@ -23,16 +23,13 @@ int main()
 	cout << "Projected in " << time_elapsed.count() << "s" << endl << endl;
 	cout << "Projected in " << num_iter << " iterations" << endl << endl;
 
-	cout << "Target frame:    " << endl << target_frame.theta << endl << endl << target_frame.lambda << endl << endl;
-	cout << "Projected frame: " << endl << projected_description.theta << endl << endl << projected_description.lambda << endl << endl;
+	double proj_loss = loss(target_coords, projected_coords);
 
-	double proj_loss = loss(target_coords, projected_description);
-
-	cout << "Proj - Target Loss: " << proj_loss << endl << endl;
+	cout << "Proj - Target loss: " << proj_loss << endl << endl;
 
 	int n = 6;
 
-	double step = numbers::pi / (2 * n);
+	double step = (numbers::pi + 1.08) / (2 * n);
 
 	auto first_start = chrono::steady_clock::now();
 
@@ -42,16 +39,15 @@ int main()
 				target_frame.theta = step * vec3(i, j, k);
 				target_frame.lambda = vec3(2.4, 8, 0.2);
 
-				vec15 target_coords = odeco_frame_coords(target_frame);
+				target_coords = odeco_frame_coords(target_frame);
 
-				auto start = chrono::steady_clock::now();
-				int num_iter;
-				odeco_frame projected_frame = odeco_frame_project(target_coords, 5, 1e-6, num_iter);
-				auto end = chrono::steady_clock::now();
+				start = chrono::steady_clock::now();
+				projected_coords = odeco_frame_project(target_coords, 0, 1e-6, num_iter);
+				end = chrono::steady_clock::now();
 
-				chrono::duration<double> time_elapsed = end - start;
+				time_elapsed = end - start;
 
-				double proj_loss = loss(target_coords, projected_frame);
+				proj_loss = loss(target_coords, projected_coords);
 
 				cout << setprecision(4);
 				cout << i << "i " << j << "j " << k << "k | " << time_elapsed.count() << "s | " << num_iter << "it | " << proj_loss << " loss" << endl;
