@@ -4,15 +4,14 @@ import os
 import math
 
 import plotly.graph_objects as go
-from dash import Dash, html, dcc, callback, Output, Input, exceptions
+from dash import Dash, html, dcc, callback, Output, Input, exceptions, ALL
 
 from odeco import generate_sh_values, generate_sh_values_from_coordinates, generate_coordinates
 
 executable_path = os.path.abspath("./3d-odeco-frame-fields/out/build/x64-debug/cli.exe")
 
 def run_cli(values: np.ndarray):
-    values = np.asarray(values)
-    values = values.flatten()
+    values = np.asarray(values).flatten()
 
     if values.size != 15:
         raise ValueError(f"Expected 15 values, got {values.size}")
@@ -34,85 +33,86 @@ def run_cli(values: np.ndarray):
     return num_iter, values
 
 app = Dash()
-app.layout = html.Div([
 
-    html.H1("Odeco Frame in SH representation"),
+app.layout = html.Div([
+    html.H1("Odeco Frame Projection"),
 
     dcc.Store(id="coordinates-store"),
 
     html.Div([
         html.Div([
-
             html.H3("Controls"),
 
             html.Div([
-                html.Label("Stretch x", style={"fontWeight": "bold"}),
+                html.Label("Scale x"),
                 dcc.Slider(id="l_x", min=0, max=10, step=0.01, value=1),
-                dcc.Input(id="l_x_input", type="number", value=1, step=0.01),
-            ], style={"marginBottom": "15px"}),
+                dcc.Input(id="l_x_input", type="number", value=1),
+            ]),
 
             html.Div([
-                html.Label("Stretch y", style={"fontWeight": "bold"}),
+                html.Label("Scale y"),
                 dcc.Slider(id="l_y", min=0, max=10, step=0.01, value=1),
-                dcc.Input(id="l_y_input", type="number", value=1, step=0.01),
-            ], style={"marginBottom": "15px"}),
+                dcc.Input(id="l_y_input", type="number", value=1),
+            ]),
 
             html.Div([
-                html.Label("Stretch z", style={"fontWeight": "bold"}),
+                html.Label("Scale z"),
                 dcc.Slider(id="l_z", min=0, max=10, step=0.01, value=1),
-                dcc.Input(id="l_z_input", type="number", value=1, step=0.01),
-            ], style={"marginBottom": "25px"}),
+                dcc.Input(id="l_z_input", type="number", value=1),
+            ]),
 
             html.Hr(),
 
             html.Div([
                 html.Label("Rotate x"),
-                dcc.Slider(id="alpha", min=-0.5 * math.pi, max=0.5 * math.pi,
-                           step=0.01, value=0),
-                dcc.Input(id="alpha_input", type="number", value=0, step=0.01),
-            ], style={"marginBottom": "15px"}),
+                dcc.Slider(id="alpha", min=-0.5 * math.pi, max=0.5 * math.pi, step=0.01, value=0),
+                dcc.Input(id="alpha_input", type="number", value=0),
+            ]),
 
             html.Div([
                 html.Label("Rotate y"),
-                dcc.Slider(id="beta", min=-0.5 * math.pi, max=0.5 * math.pi,
-                           step=0.01, value=0),
-                dcc.Input(id="beta_input", type="number", value=0, step=0.01),
-            ], style={"marginBottom": "15px"}),
+                dcc.Slider(id="beta", min=-0.5 * math.pi, max=0.5 * math.pi, step=0.01, value=0),
+                dcc.Input(id="beta_input", type="number", value=0),
+            ]),
 
             html.Div([
                 html.Label("Rotate z"),
-                dcc.Slider(id="gamma", min=-0.5 * math.pi, max=0.5 * math.pi,
-                           step=0.01, value=0),
-                dcc.Input(id="gamma_input", type="number", value=0, step=0.01),
+                dcc.Slider(id="gamma", min=-0.5 * math.pi, max=0.5 * math.pi, step=0.01, value=0),
+                dcc.Input(id="gamma_input", type="number", value=0),
             ]),
 
-        ], style={
-            "width": "20%",
-            "padding": "20px",
-            "borderRight": "1px solid #ddd",
-            "overflowY": "auto",
-            "height": "85vh"
-        }),
+            html.Hr(),
+
+            html.H3("Override Coordinates"),
+
+            html.Div([
+                dcc.Input(
+                    id={"type": "override-coord", "index": i},
+                    type="number",
+                    step=0.01,
+                    value=None,
+                    style={"width": "100%"}
+                )
+                for i in range(15)
+            ], style={
+                "display": "flex",
+                "flexDirection": "column",
+                "gap": "6px"
+            })
+        ], style={"width": "20%", "padding": "20px", "borderRight": "1px solid #ddd", "display": "flex", "flexDirection": "column"}),
+
         html.Div([
-            html.H3("Input"),
+            html.H3("Target"),
             dcc.Graph(id="input-plot", style={"height": "80vh"})
-        ], style={
-            "width": "40%",
-            "padding": "10px"
-        }),
+        ], style={"width": "40%"}),
+
         html.Div([
-            html.H3("Output"),
+            html.H3("Projection"),
+            html.P(id="num_iterations"),
             dcc.Graph(id="output-plot", style={"height": "80vh"})
-        ], style={
-            "width": "40%",
-            "padding": "10px"
-        }),
+        ], style={"width": "40%"}),
 
-    ], style={
-        "display": "flex",
-        "width": "100%"
-    })
-
+    ], style={"display": "flex"})
 ])
 
 
@@ -120,13 +120,12 @@ for slider_id in ["l_x", "l_y", "l_z", "alpha", "beta", "gamma"]:
     @app.callback(
         Output(f"{slider_id}_input", "value"),
         Input(slider_id, "value"),
-        prevent_initial_call=True,
+        prevent_initial_call=True
     )
-    def sync_slider_to_box(val):
-        return val
+    def sync_slider(v):
+        return v
 
 @callback(
-    Output("input-plot", "figure"),
     Output("coordinates-store", "data"),
     Input("l_x_input", "value"),
     Input("l_y_input", "value"),
@@ -135,46 +134,65 @@ for slider_id in ["l_x", "l_y", "l_z", "alpha", "beta", "gamma"]:
     Input("beta_input", "value"),
     Input("gamma_input", "value"),
 )
-def update_graph(l_x, l_y, l_z, alpha, beta, gamma):
-    sh_values, x, y, z = generate_sh_values(l_x, l_y, l_z, alpha, beta, gamma)
+def compute_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
     coordinates = generate_coordinates(l_x, l_y, l_z, alpha, beta, gamma)
+    return coordinates.tolist()
 
-    figure = go.Figure(
-        data=[go.Surface(x=x, y=y, z=z, surfacecolor=sh_values)]
-    )
-    figure.update_layout(
-        uirevision="fixed",
-        scene_camera=dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=1.25, y=1.25, z=1.25)
-        )
-    )
-    return figure, coordinates.tolist()
+@callback(
+    Output({"type": "override-coord", "index": ALL}, "value"),
+    Input("coordinates-store", "data"),
+)
+def sync_override_boxes(coords):
+    if coords is None:
+        raise exceptions.PreventUpdate
+    return coords
+
+@callback(
+    Output("input-plot", "figure"),
+    Input("coordinates-store", "data"),
+    Input({"type": "override-coord", "index": ALL}, "value"),
+)
+def update_input_plot(coords, overrides):
+
+    if coords is None:
+        raise exceptions.PreventUpdate
+
+    final = np.array(coords)
+
+    if overrides and any(v is not None for v in overrides):
+        for i, v in enumerate(overrides):
+            if v is not None:
+                final[i] = v
+
+    sh_values, x, y, z = generate_sh_values_from_coordinates(final)
+
+    fig = go.Figure(data=[go.Surface(x=x, y=y, z=z, surfacecolor=sh_values)])
+    return fig
 
 @callback(
     Output("output-plot", "figure"),
+    Output("num_iterations", "children"),
+    Input("input-plot", "figure"),
     Input("coordinates-store", "data"),
-    config_prevent_initial_callbacks=True
+    Input({"type": "override-coord", "index": ALL}, "value"),
 )
-def update_output_graph(coordinates):
-    if coordinates is None:
+def update_output(_, coords, overrides):
+
+    if coords is None:
         raise exceptions.PreventUpdate
-    num_iter, projection = run_cli(np.array(coordinates))
-    print(num_iter)
+
+    final = np.array(coords)
+
+    if overrides and any(v is not None for v in overrides):
+        for i, v in enumerate(overrides):
+            if v is not None:
+                final[i] = v
+
+    num_iter, projection = run_cli(final)
     sh_values, x, y, z = generate_sh_values_from_coordinates(projection)
 
-    figure = go.Figure(
-        data=[go.Surface(x=x, y=y, z=z, surfacecolor=sh_values)]
-    )
-    figure.update_layout(
-        uirevision="fixed",
-        scene_camera=dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=1.25, y=1.25, z=1.25)
-        )
-    )
-    return figure
+    fig = go.Figure(data=[go.Surface(x=x, y=y, z=z, surfacecolor=sh_values)])
+    return fig, f"{num_iter} iterations"
+
 
 app.run(debug=True)
