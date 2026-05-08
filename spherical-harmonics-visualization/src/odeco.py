@@ -13,9 +13,9 @@ from rotations import rotate_odeco
 
 
 def canonical_odeco(l_x, l_y, l_z):
-    assert l_x >= 0, "stretching ratio x has to be positive"
-    assert l_y >= 0, "stretching ratio y has to be positive"
-    assert l_z >= 0, "stretching ratio z has to be positive"
+    # assert l_x >= 0, "stretching ratio x has to be positive"
+    # assert l_y >= 0, "stretching ratio y has to be positive"
+    # assert l_z >= 0, "stretching ratio z has to be positive"
 
     # reference frame expressed in SH basis
     a_0 = [2/5 * math.sqrt(math.pi) * (l_x + l_y + l_z), # band 0
@@ -27,8 +27,7 @@ def canonical_odeco(l_x, l_y, l_z):
 
     return a_0
 
-
-def generate_sh_values(l_x, l_y, l_z, alpha, beta, gamma):
+def generate_sh_values_from_coordinates(coordinates):
     n = 100
 
     # Create grid
@@ -41,32 +40,33 @@ def generate_sh_values(l_x, l_y, l_z, alpha, beta, gamma):
     phi_flat = phi_grid.flatten()
 
     bands = [0, 2, 4]
-
-    a_0 = canonical_odeco(l_x, l_y, l_z)
-    a = rotate_odeco(a_0, alpha, beta, gamma)
-
     sh_values = []
 
-    for k in range(n*n):
+    for k in range(n * n):
         sh_value = 0
         i = 0
         for l in bands:
             for m in range(-l, l + 1):
-                sh_value += a[i] * sph_harm_real(l, m, theta_flat[k], phi_flat[k])
+                sh_value += coordinates[i] * sph_harm_real(l, m, theta_flat[k], phi_flat[k])
                 i += 1
         sh_values.append(sh_value)
 
     sh_values = np.array(sh_values)
 
     sh_values = sh_values.reshape((n, n))
+    x = sh_values * np.sin(theta_grid) * np.cos(phi_grid)
+    y = sh_values * np.sin(theta_grid) * np.sin(phi_grid)
+    z = sh_values * np.cos(theta_grid)
+    return sh_values, x, y, z
 
-    offset = 0
-    r = offset + sh_values
+def generate_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
+    a_0 = canonical_odeco(l_x, l_y, l_z)
+    a = rotate_odeco(a_0, alpha, beta, gamma)
+    return a
 
-    x = r * np.sin(theta_grid) * np.cos(phi_grid)
-    y = r * np.sin(theta_grid) * np.sin(phi_grid)
-    z = r * np.cos(theta_grid)
-
+def generate_sh_values(l_x, l_y, l_z, alpha, beta, gamma):
+    a = generate_coordinates(l_x, l_y, l_z, alpha, beta, gamma)
+    sh_values, x, y, z = generate_sh_values_from_coordinates(a)
     return sh_values, x, y, z
 
 
@@ -147,7 +147,7 @@ for slider_id in ["l_x", "l_y", "l_z", "alpha", "beta", "gamma"]:
     def sync_slider_to_box(val):
         return val
 
-@app.callback(
+@callback(
     Output("3d-surface-plot", "figure"),
     Input("l_x_input", "value"),
     Input("l_y_input", "value"),
@@ -172,4 +172,4 @@ def update_graph(l_x, l_y, l_z, alpha, beta, gamma):
     )
     return figure
 
-app.run(debug=True)
+#app.run(debug=True)
