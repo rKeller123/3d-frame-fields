@@ -35,9 +35,12 @@ double compute_step_size(const vec15& y, const odeco_frame& frame, const vec6& d
 		.lambda = dx.block<3, 1>(3, 0)
 	};
 
+	double loss_y_frame = loss(y, frame);
+	double alpha_dot = alpha * dot(grad, dx);
+
 	double t = t_init;
 
-	while (loss(y, frame + t * dx_frame) > loss(y, frame) + t * alpha * dot(grad, dx)) {
+	while (loss(y, frame + t * dx_frame) > loss_y_frame + t * alpha_dot) {
 		t *= tau;
 	}
 

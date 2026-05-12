@@ -56,9 +56,9 @@ def generate_sh_values(alpha, beta, gamma):
     return sh_values, x, y, z
 
 # Plot
-app = Dash()
+octahedral = Dash()
 
-app.layout = html.Div([
+octahedral.layout = html.Div([
     html.H1("Octahedral Frame in SH representation"),
 
     html.Div([
@@ -109,4 +109,4 @@ def update_graph(alpha, beta, gamma):
 
     return figure
 
-app.run(debug=True)
+octahedral.run(debug=True)

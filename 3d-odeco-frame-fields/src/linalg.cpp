@@ -137,7 +137,8 @@ mat15 rotation_y_15d(double beta)
 
 mat15 rotation_x_15d(double alpha)
 {
-    return rotation_y_15d(std::numbers::pi / 2).transpose() * rotation_z_15d(alpha) * rotation_y_15d(std::numbers::pi / 2);
+    mat15 rot_y_pi_over_2 = rotation_y_15d(std::numbers::pi / 2);
+    return rot_y_pi_over_2.transpose() * rotation_z_15d(alpha) * rot_y_pi_over_2;
 }
 
 mat15 rotation_15d(double alpha, double beta, double gamma)
