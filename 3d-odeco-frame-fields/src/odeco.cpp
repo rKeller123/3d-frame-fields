@@ -35,19 +35,41 @@ odeco_euler operator*(double t, const odeco_euler& f)
 
 vec15 ref_frame_coords(const vec3& lambda)
 {
-	return F * lambda;
+	const double l_x = lambda[0], l_y = lambda[1], l_z = lambda[2];
+
+	static const double sqrt_pi = sqrt(numbers::pi);
+	static const double sqrt_pi_3 = sqrt(3 * numbers::pi);
+	static const double sqrt_5 = sqrt(5);
+
+	return {
+		(2 * sqrt_pi / 5) * (l_x + l_y + l_z),
+		0,
+		0,
+		-(4 * sqrt_pi) / (7 * sqrt_5) * (l_x + l_y - 2 * l_z),
+		0,
+		(4 * sqrt_pi_3) / (7 * sqrt_5) * (l_x - l_y),
+		0,
+		0,
+		0,
+		0,
+		(2 * sqrt_pi / 105) * (3 * l_x + 3 * l_y + 8 * l_z),
+		0,
+		(4 * sqrt_pi) / (21 * sqrt_5) * (l_y - l_x),
+		0,
+		(2 * sqrt_pi) / (3 * sqrt(35)) * (l_x + l_y)
+	};
 }
 
 vec15 odeco_frame_coords(const odeco_euler& frame)
 {
 	mat15 rotation = rotation_15d(frame.theta);
 	vec15 ref_frame = ref_frame_coords(frame.lambda);
-	return rotation * ref_frame;
+	return block_prod_vec(rotation, ref_frame);
 }
 
 vec15 odeco_frame_coords(const odeco_mat& frame)
 {
-	return frame.rot * ref_frame_coords(frame.lambda);
+	return block_prod_vec(frame.rot, ref_frame_coords(frame.lambda));
 }
 
 double loss(const vec15& y, const odeco_euler& frame)
@@ -64,15 +86,15 @@ double loss(const vec15& y, const odeco_mat& frame)
 
 double loss(const vec15& y, const vec15& frame_coords)
 {
-	return dot(frame_coords - y, frame_coords - y);
+	return (frame_coords - y).squaredNorm();
 }
 
 vec6 compute_gradient(const vec15& y, const odeco_euler& frame)
 {
 	vec15 ref_frame = ref_frame_coords(frame.lambda);
-	mat15 L_x = lie_x_15d();
-	mat15 L_y = lie_y_15d();
-	mat15 L_z = lie_z_15d();
+	static const mat15 L_x = lie_x_15d();
+	static const mat15 L_y = lie_y_15d();
+	static const mat15 L_z = lie_z_15d();
 
 	vec6 gradient = vec6::Zero();
 
@@ -88,16 +110,22 @@ vec6 compute_gradient(const vec15& y, const odeco_euler& frame)
 mat6 compute_hessian(const vec15& y, const odeco_euler& frame)
 {
 	vec15 ref_frame = ref_frame_coords(frame.lambda);
-	mat15 L_x = lie_x_15d();
-	mat15 L_y = lie_y_15d();
-	mat15 L_z = lie_z_15d();
+	static const mat15 L_x = lie_x_15d();
+	static const mat15 L_y = lie_y_15d();
+	static const mat15 L_z = lie_z_15d();
+	static const mat15 Lxx = L_x * L_x;
+	static const mat15 Lxy = L_x * L_y;
+	static const mat15 Lxz = L_x * L_z;
+	static const mat15 Lyy = L_y * L_y;
+	static const mat15 Lyz = L_y * L_z;
+	static const mat15 Lzz = L_z * L_z;
 
 	mat6 H = mat6::Zero();
 
 	mat3 H_1{
-		{ -2 * y.transpose() * L_x * L_x * ref_frame, -2 * y.transpose() * L_x * L_y * ref_frame, -2 * y.transpose() * L_x * L_z * ref_frame },
-		{ -2 * y.transpose() * L_x * L_y * ref_frame, -2 * y.transpose() * L_y * L_y * ref_frame, -2 * y.transpose() * L_y * L_z * ref_frame },
-		{ -2 * y.transpose() * L_x * L_z * ref_frame, -2 * y.transpose() * L_y * L_z * ref_frame, -2 * y.transpose() * L_z * L_z * ref_frame },
+		{ -2 * y.transpose() * Lxx * ref_frame, -2 * y.transpose() * Lxy * ref_frame, -2 * y.transpose() * Lxz * ref_frame },
+		{ -2 * y.transpose() * Lxy * ref_frame, -2 * y.transpose() * Lyy * ref_frame, -2 * y.transpose() * Lyz * ref_frame },
+		{ -2 * y.transpose() * Lxz * ref_frame, -2 * y.transpose() * Lyz * ref_frame, -2 * y.transpose() * Lzz * ref_frame },
 	};
 
 	mat3 H_2 = mat3::Zero();
@@ -107,7 +135,7 @@ mat6 compute_hessian(const vec15& y, const odeco_euler& frame)
 
 	mat3 H_3 = H_2.transpose();
 
-	mat3 H_4 = 2 * F.transpose() * F;
+	static const mat3 H_4 = 2 * F.transpose() * F;
 
 	H.block<3, 3>(0, 0) = H_1;
 	H.block<3, 3>(0, 3) = H_2;
@@ -159,7 +187,6 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 	int max_iter = 1024;
 	num_iterations = max_iter;
 
-	vec15 current_frame_coords;
 	vec6 grad;
 	mat6 hess;
 	vec6 newton_step;
@@ -192,7 +219,7 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 		current_frame = update_frame(current_frame, newton_step, t);
 
 		// avoid gimbal locks: absorb rotation into target, keep current_frame.theta = 0
-		rotation = rotation * rotation_15d(current_frame.theta);
+		rotation = block_prod_mat(rotation, rotation_15d(current_frame.theta));
 		target = rotation.transpose() * y;
 		current_frame = odeco_euler(current_frame.lambda);
 	}

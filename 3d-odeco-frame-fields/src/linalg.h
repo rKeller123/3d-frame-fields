@@ -21,14 +21,18 @@ typedef Eigen::Matrix<double, 15, 15> mat15;
 typedef Eigen::Matrix<double, 15, 3> mat15x3;
 typedef Eigen::Matrix<double, 3, 15> mat3x15;
 
-
 // rotations
 
 mat5 rotation_z_5d(double gamma);
+mat5 rotation_y_5d(double beta);
+mat5 rotation_x_5d(double alpha);
 
 mat9 rotation_z_9d(double gamma);
+mat9 rotation_y_9d(double beta);
+mat9 rotation_x_9d(double alpha);
 
 mat15 rotation_z_15d(double gamma);
+mat15 rotation_x_15d_pi_over_2();
 mat15 rotation_y_15d(double beta);
 mat15 rotation_x_15d(double alpha);
 mat15 rotation_15d(double alpha, double beta, double gamma);
@@ -41,6 +45,10 @@ mat15 lie_z_15d();
 mat15 rotation_15d_lie(double alpha, double beta, double gamma);
 
 // vector operations
+
+mat15 block_prod_mat(const mat15& a, const mat15& b);
+vec15 block_prod_vec(const mat15& a, const vec15& b);
+
 template<typename DerivedV0, typename DerivedV1>
 inline double dot(const Eigen::MatrixBase<DerivedV0>& v0, const Eigen::MatrixBase<DerivedV1>& v1)
 {

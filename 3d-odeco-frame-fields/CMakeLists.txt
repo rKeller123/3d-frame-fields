@@ -20,6 +20,21 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET cli PROPERTY CXX_STANDARD 20)
 endif()
 
+target_compile_options(cli PRIVATE
+    $<$<CXX_COMPILER_ID:GNU>:
+        -O3
+        -march=native
+        -DEIGEN_NO_DEBUG
+    >
+)
+target_compile_options(3d-odeco-frame-fields PRIVATE
+    $<$<CXX_COMPILER_ID:GNU>:
+        -O3
+        -march=native
+        -DEIGEN_NO_DEBUG
+    >
+)
+
 
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(3d-odeco-frame-fields PRIVATE Eigen3::Eigen)
