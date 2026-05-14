@@ -4,14 +4,33 @@
 
 using namespace std;
 
-int main()
+int parse(const string& input)
 {
+	try {
+		return stoi(input);
+	}
+	catch (const invalid_argument&) {
+		throw invalid_argument("parse: '" + input + "' is not a valid integer");
+	}
+	catch (const out_of_range&) {
+		throw out_of_range("parse: '" + input + "' is out of int range");
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	int n;
+	if (argc < 2) {
+		cout << "No argument provided. Using default setting (6)" << endl << endl;
+		n = 6;
+	}
+	else {
+		n = parse(argv[1]);
+	}
 
 	vec15 target_coords;
 	int num_iter;
 	chrono::duration<double> time_elapsed;
-
-	int n = 6;
 
 	double step = (numbers::pi + 1.08) / (2 * n);
 
