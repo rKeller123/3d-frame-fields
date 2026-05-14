@@ -21,7 +21,7 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 target_compile_options(cli PRIVATE
-    $<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Release>>:
+    $<$<CXX_COMPILER_ID:GNU>:
         -O3
         -march=native
         -DEIGEN_NO_DEBUG
@@ -33,7 +33,7 @@ target_compile_options(cli PRIVATE
     >
 )
 target_compile_options(3d-odeco-frame-fields PRIVATE
-    $<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Release>>:
+    $<$<CXX_COMPILER_ID:GNU>:
         -O3
         -march=native
         -DEIGEN_NO_DEBUG
