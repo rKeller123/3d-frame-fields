@@ -73,17 +73,14 @@ vec6 compute_gradient(const vec15& y, const odeco_euler& frame)
 	mat15 L_x = lie_x_15d();
 	mat15 L_y = lie_y_15d();
 	mat15 L_z = lie_z_15d();
-	mat15 R_x = rotation_x_15d(frame.theta.x());
-	mat15 R_y = rotation_y_15d(frame.theta.y());
-	mat15 R_z = rotation_z_15d(frame.theta.z());
 
 	vec6 gradient = vec6::Zero();
 
-	gradient(0) = -2 * y.transpose() * L_x * R_x * R_y * R_z * ref_frame;
-	gradient(1) = -2 * y.transpose() * R_x * L_y * R_y * R_z * ref_frame;
-	gradient(2) = -2 * y.transpose() * R_x * R_y * L_z * R_z * ref_frame;
+	gradient(0) = -2 * y.transpose() * L_x * ref_frame;
+	gradient(1) = -2 * y.transpose() * L_y * ref_frame;
+	gradient(2) = -2 * y.transpose() * L_z * ref_frame;
 	
-	gradient.block<3, 1>(3, 0) = 2 * F.transpose() * ref_frame - 2 * F.transpose() * (R_x * R_y * R_z).transpose() * y;
+	gradient.block<3, 1>(3, 0) = 2 * F.transpose() * ref_frame - 2 * F.transpose() * y;
 
 	return gradient;
 }
@@ -94,22 +91,19 @@ mat6 compute_hessian(const vec15& y, const odeco_euler& frame)
 	mat15 L_x = lie_x_15d();
 	mat15 L_y = lie_y_15d();
 	mat15 L_z = lie_z_15d();
-	mat15 R_x = rotation_x_15d(frame.theta.x());
-	mat15 R_y = rotation_y_15d(frame.theta.y());
-	mat15 R_z = rotation_z_15d(frame.theta.z());
 
 	mat6 H = mat6::Zero();
 
 	mat3 H_1{
-		{ -2 * y.transpose() * L_x * L_x * R_x * R_y * R_z * ref_frame, -2 * y.transpose() * L_x * R_x * L_y * R_y * R_z * ref_frame, -2 * y.transpose() * L_x * R_x * R_y * L_z * R_z * ref_frame },
-		{ -2 * y.transpose() * L_x * R_x * L_y * R_y * R_z * ref_frame, -2 * y.transpose() * R_x * L_y * L_y * R_y * R_z * ref_frame, -2 * y.transpose() * R_x * L_y * R_y * L_z * R_z * ref_frame },
-		{ -2 * y.transpose() * L_x * R_x * R_y * L_z * R_z * ref_frame, -2 * y.transpose() * R_x * L_y * R_y * L_z * R_z * ref_frame, -2 * y.transpose() * R_x * R_y * L_z * L_z * R_z * ref_frame },
+		{ -2 * y.transpose() * L_x * L_x * ref_frame, -2 * y.transpose() * L_x * L_y * ref_frame, -2 * y.transpose() * L_x * L_z * ref_frame },
+		{ -2 * y.transpose() * L_x * L_y * ref_frame, -2 * y.transpose() * L_y * L_y * ref_frame, -2 * y.transpose() * L_y * L_z * ref_frame },
+		{ -2 * y.transpose() * L_x * L_z * ref_frame, -2 * y.transpose() * L_y * L_z * ref_frame, -2 * y.transpose() * L_z * L_z * ref_frame },
 	};
 
 	mat3 H_2 = mat3::Zero();
-	H_2.block<1, 3>(0, 0) = (-2 * F.transpose() * (L_x * R_x * R_y * R_z).transpose() * y).transpose();
-	H_2.block<1, 3>(1, 0) = (-2 * F.transpose() * (R_x * L_y * R_y * R_z).transpose() * y).transpose();
-	H_2.block<1, 3>(2, 0) = (-2 * F.transpose() * (R_x * R_y * L_z * R_z).transpose() * y).transpose();
+	H_2.block<1, 3>(0, 0) = (-2 * F.transpose() * L_x.transpose() * y).transpose();
+	H_2.block<1, 3>(1, 0) = (-2 * F.transpose() * L_y.transpose() * y).transpose();
+	H_2.block<1, 3>(2, 0) = (-2 * F.transpose() * L_z.transpose() * y).transpose();
 
 	mat3 H_3 = H_2.transpose();
 
@@ -192,7 +186,7 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 		}
 		
 		// line search step size
-		t = compute_step_size(target, current_frame, newton_step, -newton_decrement, 1.0, 0.1, 0.9);
+		t = compute_step_size(target, current_frame, newton_step, -newton_decrement, 1.0, 0.01, 0.25);
 		
 		// update frame description
 		current_frame = update_frame(current_frame, newton_step, t);
