@@ -51,9 +51,9 @@ int main(int argc, char *argv[])
 	vec15 target = parse(input);
 
 	int num_iter;
-	vec15 proj = odeco_frame_project(target, 0, 1e-9, num_iter);
+	odeco_mat proj = odeco_frame_project(target, 0, 1e-9, num_iter);
 
-	cout << stringify(num_iter, proj) << endl;
+	cout << stringify(num_iter, odeco_frame_coords(proj)) << endl;
 
 	return 0;
 }

@@ -5,24 +5,36 @@
 #include <numbers>
 #include <iostream>
 
-struct odeco_frame {
+struct odeco_euler {
 	vec3 theta;
 	vec3 lambda;
+	odeco_euler(const vec3& theta, const vec3& lambda);
+	odeco_euler(const vec3& lambda);
 };
 
-odeco_frame operator+(const odeco_frame& f0, const odeco_frame& f1);
-odeco_frame operator*(double t, const odeco_frame& f);
+struct odeco_mat {
+	mat15 rot;
+	vec3 lambda;
+
+	odeco_mat(const vec3& theta, const vec3& lambda);
+	odeco_mat(const vec3& lambda);
+};
+
+odeco_euler operator+(const odeco_euler& f0, const odeco_euler& f1);
+odeco_euler operator*(double t, const odeco_euler& f);
 
 vec15 ref_frame_coords(const vec3& lambda);
-vec15 odeco_frame_coords(const odeco_frame& frame);
+vec15 odeco_frame_coords(const odeco_euler& frame);
+vec15 odeco_frame_coords(const odeco_mat& frame);
 
-double loss(const vec15& y, const odeco_frame& frame);
+double loss(const vec15& y, const odeco_euler& frame);
+double loss(const vec15& y, const odeco_mat& frame);
 double loss(const vec15& y, const vec15& frame_coords);
 
-vec6 compute_gradient(const vec15& y, const odeco_frame& frame);
+vec6 compute_gradient(const vec15& y, const odeco_euler& frame);
 
-mat6 compute_hessian(const vec15& y, const odeco_frame& frame);
+mat6 compute_hessian(const vec15& y, const odeco_euler& frame);
 
-odeco_frame closest_seed(const vec15& y, int max_1d_res);
+odeco_euler closest_seed(const vec15& y, int max_1d_res);
 
-vec15 odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations);
+odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations);

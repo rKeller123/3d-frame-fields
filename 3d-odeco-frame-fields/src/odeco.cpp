@@ -1,7 +1,6 @@
 
 #include "odeco.h"
 
-
 using namespace std;
 
 mat15x3 F{
@@ -24,20 +23,14 @@ mat15x3 F{
 		{(2 * sqrt(numbers::pi)) / (3 * sqrt(35)), (2 * sqrt(numbers::pi)) / (3 * sqrt(35)), 0}
 };
 
-odeco_frame operator+(const odeco_frame& f0, const odeco_frame& f1)
+odeco_euler operator+(const odeco_euler& f0, const odeco_euler& f1)
 {
-	return odeco_frame{
-		.theta = f0.theta + f1.theta,
-		.lambda = f0.lambda + f1.lambda
-	};
+	return odeco_euler(f0.theta + f1.theta, f0.lambda + f1.lambda);
 }
 
-odeco_frame operator*(double t, const odeco_frame& f)
+odeco_euler operator*(double t, const odeco_euler& f)
 {
-	return odeco_frame{
-		.theta = t * f.theta,
-		.lambda = t * f.lambda
-	};
+	return odeco_euler(t * f.theta, t * f.lambda);
 }
 
 vec15 ref_frame_coords(const vec3& lambda)
@@ -45,14 +38,25 @@ vec15 ref_frame_coords(const vec3& lambda)
 	return F * lambda;
 }
 
-vec15 odeco_frame_coords(const odeco_frame& frame)
+vec15 odeco_frame_coords(const odeco_euler& frame)
 {
 	mat15 rotation = rotation_15d(frame.theta);
 	vec15 ref_frame = ref_frame_coords(frame.lambda);
 	return rotation * ref_frame;
 }
 
-double loss(const vec15& y, const odeco_frame& frame)
+vec15 odeco_frame_coords(const odeco_mat& frame)
+{
+	return frame.rot * ref_frame_coords(frame.lambda);
+}
+
+double loss(const vec15& y, const odeco_euler& frame)
+{
+	vec15 f = odeco_frame_coords(frame);
+	return loss(y, f);
+}
+
+double loss(const vec15& y, const odeco_mat& frame)
 {
 	vec15 f = odeco_frame_coords(frame);
 	return loss(y, f);
@@ -63,7 +67,7 @@ double loss(const vec15& y, const vec15& frame_coords)
 	return dot(frame_coords - y, frame_coords - y);
 }
 
-vec6 compute_gradient(const vec15& y, const odeco_frame& frame)
+vec6 compute_gradient(const vec15& y, const odeco_euler& frame)
 {
 	vec15 ref_frame = ref_frame_coords(frame.lambda);
 	mat15 L_x = lie_x_15d();
@@ -84,7 +88,7 @@ vec6 compute_gradient(const vec15& y, const odeco_frame& frame)
 	return gradient;
 }
 
-mat6 compute_hessian(const vec15& y, const odeco_frame& frame)
+mat6 compute_hessian(const vec15& y, const odeco_euler& frame)
 {
 	vec15 ref_frame = ref_frame_coords(frame.lambda);
 	mat15 L_x = lie_x_15d();
@@ -97,9 +101,9 @@ mat6 compute_hessian(const vec15& y, const odeco_frame& frame)
 	mat6 H = mat6::Zero();
 
 	mat3 H_1{
-		{-2 * y.transpose() * L_x * L_x * R_x * R_y * R_z * ref_frame, -2 * y.transpose() * L_x * R_x * L_y * R_y * R_z * ref_frame, -2 * y.transpose() * L_x * R_x * R_y * L_z * R_z * ref_frame},
-		{-2 * y.transpose() * L_x * R_x * L_y * R_y * R_z * ref_frame, -2 * y.transpose() * R_x * L_y * L_y * R_y * R_z * ref_frame, -2 * y.transpose() * R_x * L_y * R_y * L_z * R_z * ref_frame},
-		{-2 * y.transpose() * L_x * R_x * R_y * L_z * R_z * ref_frame, -2 * y.transpose() * R_x * L_y * R_y * L_z * R_z * ref_frame, -2 * y.transpose() * R_x * R_y * L_z * L_z * R_z * ref_frame},
+		{ -2 * y.transpose() * L_x * L_x * R_x * R_y * R_z * ref_frame, -2 * y.transpose() * L_x * R_x * L_y * R_y * R_z * ref_frame, -2 * y.transpose() * L_x * R_x * R_y * L_z * R_z * ref_frame },
+		{ -2 * y.transpose() * L_x * R_x * L_y * R_y * R_z * ref_frame, -2 * y.transpose() * R_x * L_y * L_y * R_y * R_z * ref_frame, -2 * y.transpose() * R_x * L_y * R_y * L_z * R_z * ref_frame },
+		{ -2 * y.transpose() * L_x * R_x * R_y * L_z * R_z * ref_frame, -2 * y.transpose() * R_x * L_y * R_y * L_z * R_z * ref_frame, -2 * y.transpose() * R_x * R_y * L_z * L_z * R_z * ref_frame },
 	};
 
 	mat3 H_2 = mat3::Zero();
@@ -119,16 +123,13 @@ mat6 compute_hessian(const vec15& y, const odeco_frame& frame)
 	return H;
 }
 
-odeco_frame closest_seed(const vec15& y, int max_1d_res)
+odeco_euler closest_seed(const vec15& y, int max_1d_res)
 {
 	// naive implementation: try out different rotations and pick the best
 
-	odeco_frame best = {
-		.theta = vec3(0.0, 0.0, 0.0),
-		.lambda = vec3(1.0, 1.0, 1.0)
-	};
+	odeco_euler best(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
 
-	odeco_frame current = best;
+	odeco_euler current = best;
 
 	double best_loss = loss(y, best);
 	double current_loss;
@@ -138,7 +139,7 @@ odeco_frame closest_seed(const vec15& y, int max_1d_res)
 	for (int i = 0; i < max_1d_res; i++) {
 		for (int j = 0; j < max_1d_res; j++) {
 			for (int k = 0; k < max_1d_res; k++) {
-				current.theta = step * vec3(i, j, k);
+				current = odeco_euler(step * vec3(i, j, k), current.lambda);
 				current_loss = loss(y, current);
 				if (current_loss < best_loss) {
 					best_loss = current_loss;
@@ -152,17 +153,14 @@ odeco_frame closest_seed(const vec15& y, int max_1d_res)
 }
 
 // TODO: consider non-negativity constraints for lambda
-vec15 odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
+odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
 {
-	odeco_frame seed = closest_seed(y, max_1d_res_seed);
+	odeco_euler seed = closest_seed(y, max_1d_res_seed);
 
 	mat15 rotation = rotation_15d(seed.theta);
 
 	vec15 target = rotation.transpose() * y;
-	odeco_frame current_frame{
-		.theta = vec3(0, 0, 0),
-		.lambda = vec3(1, 1, 1)
-	};
+	odeco_euler current_frame(vec3(1.0, 1.0, 1.0));
 
 	int max_iter = 1024;
 	num_iterations = max_iter;
@@ -171,7 +169,6 @@ vec15 odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& 
 	vec6 grad;
 	mat6 hess;
 	vec6 newton_step;
-	mat15 rotation_step;
 	double newton_decrement;
 	double t;
 
@@ -195,17 +192,37 @@ vec15 odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& 
 		}
 		
 		// line search step size
-		t = compute_step_size(target, current_frame, newton_step, grad, 1.0, 0.1, 0.9);
+		t = compute_step_size(target, current_frame, newton_step, -newton_decrement, 1.0, 0.1, 0.9);
 		
 		// update frame description
 		current_frame = update_frame(current_frame, newton_step, t);
 
 		// avoid gimbal locks: absorb rotation into target, keep current_frame.theta = 0
-		rotation_step = rotation_15d(current_frame.theta);
-		target = rotation_step.transpose() * target;
-		rotation = rotation * rotation_step;
-		current_frame.theta = vec3(0, 0, 0);
+		rotation = rotation * rotation_15d(current_frame.theta);
+		target = rotation.transpose() * y;
+		current_frame = odeco_euler(current_frame.lambda);
 	}
+	odeco_mat proj = odeco_mat(current_frame.lambda);
+	proj.rot = rotation;
+	return proj;
+}
 
-	return rotation * odeco_frame_coords(current_frame);
+odeco_euler::odeco_euler(const vec3& theta, const vec3& lambda)
+{
+	this->theta = theta;
+	this->lambda = lambda;
+}
+
+odeco_euler::odeco_euler(const vec3& lambda) : odeco_euler(vec3(0, 0, 0), lambda)
+{
+}
+
+odeco_mat::odeco_mat(const vec3& theta, const vec3& lambda)
+{
+	this->rot = rotation_15d(theta);
+	this->lambda = lambda;
+}
+
+odeco_mat::odeco_mat(const vec3& lambda) : odeco_mat(vec3::Zero(), lambda)
+{
 }

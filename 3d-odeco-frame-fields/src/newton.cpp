@@ -28,15 +28,12 @@ double compute_newton_decrement(const vec6& gradient, const vec6& newton_step)
 	return -dot(gradient, newton_step);
 }
 
-double compute_step_size(const vec15& y, const odeco_frame& frame, const vec6& dx, const vec6& grad, double t_init, double alpha, double tau)
+double compute_step_size(const vec15& y, const odeco_euler& frame, const vec6& newton_step, double neg_newton_decr, double t_init, double alpha, double tau)
 {
-	odeco_frame dx_frame{
-		.theta = dx.block<3, 1>(0, 0),
-		.lambda = dx.block<3, 1>(3, 0)
-	};
+	odeco_euler dx_frame(newton_step.block<3, 1>(0, 0), newton_step.block<3, 1>(3, 0));
 
 	double loss_y_frame = loss(y, frame);
-	double alpha_dot = alpha * dot(grad, dx);
+	double alpha_dot = alpha * neg_newton_decr;
 
 	double t = t_init;
 
@@ -47,11 +44,9 @@ double compute_step_size(const vec15& y, const odeco_frame& frame, const vec6& d
 	return t;
 }
 
-odeco_frame update_frame(const odeco_frame& frame, const vec6& newton_step, double t)
+odeco_euler update_frame(const odeco_euler& frame, const vec6& newton_step, double t)
 {
-	odeco_frame newton_step_frame{
-		.theta = newton_step.block<3, 1>(0, 0),
-		.lambda = newton_step.block<3, 1>(3, 0)
-	};
-	return frame + t * newton_step_frame;
+	odeco_euler newton_step_frame(newton_step.block<3, 1>(0, 0), newton_step.block<3, 1>(3, 0));
+	odeco_euler update = frame + t * newton_step_frame;
+	return update;
 }
