@@ -31,10 +31,6 @@ mat9 rotation_z_9d(double gamma);
 mat9 rotation_y_9d(double beta);
 mat9 rotation_x_9d(double alpha);
 
-mat15 rotation_z_15d(double gamma);
-mat15 rotation_x_15d_pi_over_2();
-mat15 rotation_y_15d(double beta);
-mat15 rotation_x_15d(double alpha);
 mat15 rotation_15d(double alpha, double beta, double gamma);
 mat15 rotation_15d(const vec3& theta);
 

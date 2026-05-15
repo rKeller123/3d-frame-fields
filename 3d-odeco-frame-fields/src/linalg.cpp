@@ -97,13 +97,19 @@ mat5 rotation_z_5d(double gamma)
 
 mat5 rotation_y_5d(double beta)
 {
-    return rot_x_pi_over_2_5d * rotation_z_5d(beta) * rot_x_pi_over_2_5d.transpose();
+    static const mat5 rot_x_pi_over_2_5d_T = rot_x_pi_over_2_5d.transpose();
+    mat5 tmp;
+    tmp.noalias() = rotation_z_5d(beta) * rot_x_pi_over_2_5d_T;
+    return rot_x_pi_over_2_5d * tmp;
 }
 
 mat5 rotation_x_5d(double alpha)
 {
     static const mat5 rot_y_pi_over_2_5d = rotation_y_5d(std::numbers::pi / 2);
-    return rot_y_pi_over_2_5d.transpose() * rotation_z_5d(alpha) * rot_y_pi_over_2_5d;
+    static const mat5 rot_y_pi_over_2_5d_T = rot_y_pi_over_2_5d.transpose();
+    mat5 tmp;
+    tmp.noalias() = rotation_z_5d(alpha) * rot_y_pi_over_2_5d;
+    return rot_y_pi_over_2_5d_T * tmp;
 }
 
 mat9 rotation_z_9d(double gamma)
@@ -123,50 +129,24 @@ mat9 rotation_z_9d(double gamma)
 
 mat9 rotation_y_9d(double beta)
 {
-    return rot_x_pi_over_2_9d * rotation_z_9d(beta) * rot_x_pi_over_2_9d.transpose();
+    static const mat9 rot_x_pi_over_2_9d_T = rot_x_pi_over_2_9d.transpose();
+    mat9 tmp;
+    tmp.noalias() = rotation_z_9d(beta) * rot_x_pi_over_2_9d_T;
+    return rot_x_pi_over_2_9d * tmp;
 }
 
 mat9 rotation_x_9d(double alpha)
 {
     static const mat9 rot_y_pi_over_2_9d = rotation_y_9d(std::numbers::pi / 2);
-    return rot_y_pi_over_2_9d.transpose() * rotation_z_9d(alpha) * rot_y_pi_over_2_9d;
+    static const mat9 rot_y_pi_over_2_9d_T = rot_y_pi_over_2_9d.transpose();
+    mat9 tmp;
+    tmp.noalias() = rotation_z_9d(alpha) * rot_y_pi_over_2_9d;
+    return rot_y_pi_over_2_9d_T * tmp;
 }
 
 // methods
 
-mat15 rotation_z_15d(double gamma)
-{
-    mat5 m5 = rotation_z_5d(gamma);
-    mat9 m9 = rotation_z_9d(gamma);
 
-    mat15 m = mat15::Zero();
-    m(0, 0) = 1.0;
-    m.block<5, 5>(1, 1) = m5;
-    m.block<9, 9>(6, 6) = m9;
-
-    return m;
-}
-
-mat15 rotation_x_15d_pi_over_2()
-{
-    mat15 rot_x_pi_over_2_15d = mat15::Zero();
-    rot_x_pi_over_2_15d(0, 0) = 1.0;
-    rot_x_pi_over_2_15d.block<5, 5>(1, 1) = rot_x_pi_over_2_5d;
-    rot_x_pi_over_2_15d.block<9, 9>(6, 6) = rot_x_pi_over_2_9d;
-    return rot_x_pi_over_2_15d;
-}
-
-mat15 rotation_y_15d(double beta)
-{
-    static const mat15 rot_x_pi_over_2_15d = rotation_x_15d_pi_over_2();
-    return rot_x_pi_over_2_15d * rotation_z_15d(beta) * rot_x_pi_over_2_15d.transpose();
-}
-
-mat15 rotation_x_15d(double alpha)
-{
-    static const mat15 rot_y_pi_over_2 = rotation_y_15d(std::numbers::pi / 2);
-    return rot_y_pi_over_2.transpose() * rotation_z_15d(alpha) * rot_y_pi_over_2;
-}
 
 mat15 rotation_15d(double alpha, double beta, double gamma)
 {
@@ -182,8 +162,18 @@ mat15 rotation_15d(double alpha, double beta, double gamma)
 
     // leverage block matrix structure for more efficient product
     rot(0, 0) = 1.0;
-    rot.block<5, 5>(1, 1) = rot_x_5d * rot_y_5d * rot_z_5d;
-    rot.block<9, 9>(6, 6) = rot_x_9d * rot_y_9d * rot_z_9d;
+
+    mat5 tmp5;
+    tmp5.noalias() = rot_y_5d * rot_z_5d;
+    mat5 res5;
+    res5.noalias() = rot_x_5d * tmp5;
+    rot.block<5, 5>(1, 1) = res5;
+
+    mat9 tmp9;
+    tmp9.noalias() = rot_y_9d * rot_z_9d;
+    mat9 res9;
+    res9.noalias() = rot_x_9d * tmp9;
+    rot.block<9, 9>(6, 6) = res9;
   
     return rot;
 }

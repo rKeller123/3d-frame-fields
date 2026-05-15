@@ -49,3 +49,7 @@ target_compile_options(3d-odeco-frame-fields PRIVATE
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(3d-odeco-frame-fields PRIVATE Eigen3::Eigen)
 target_link_libraries(cli PRIVATE Eigen3::Eigen)
+
+#find_package(OpenMP)
+#target_link_libraries(3d-odeco-frame-fields PRIVATE OpenMP::OpenMP_CXX)
+#target_link_libraries(cli PRIVATE OpenMP::OpenMP_CXX)
