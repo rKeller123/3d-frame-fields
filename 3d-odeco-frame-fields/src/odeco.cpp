@@ -122,10 +122,14 @@ mat6 compute_hessian(const vec15& y, const odeco_euler& frame)
 
 	mat6 H = mat6::Zero();
 
+	const double H_1_12 = -2 * y.transpose() * Lxy * ref_frame;
+	const double H_1_13 = -2 * y.transpose() * Lxz * ref_frame;
+	const double H_1_23 = -2 * y.transpose() * Lyz * ref_frame;
+
 	mat3 H_1{
-		{ -2 * y.transpose() * Lxx * ref_frame, -2 * y.transpose() * Lxy * ref_frame, -2 * y.transpose() * Lxz * ref_frame },
-		{ -2 * y.transpose() * Lxy * ref_frame, -2 * y.transpose() * Lyy * ref_frame, -2 * y.transpose() * Lyz * ref_frame },
-		{ -2 * y.transpose() * Lxz * ref_frame, -2 * y.transpose() * Lyz * ref_frame, -2 * y.transpose() * Lzz * ref_frame },
+		{ -2 * y.transpose() * Lxx * ref_frame, H_1_12,  H_1_13},
+		{ H_1_12, -2 * y.transpose() * Lyy * ref_frame,  H_1_23},
+		{ H_1_13, H_1_23, -2 * y.transpose() * Lzz * ref_frame },
 	};
 
 	mat3 H_2 = mat3::Zero();
@@ -220,7 +224,7 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 
 		// avoid gimbal locks: absorb rotation into target, keep current_frame.theta = 0
 		rotation = block_prod_mat(rotation, rotation_15d(current_frame.theta));
-		target = rotation.transpose() * y;
+		target = block_prod_vec(rotation.transpose(), y);
 		current_frame = odeco_euler(current_frame.lambda);
 	}
 	odeco_mat proj = odeco_mat(current_frame.lambda);
