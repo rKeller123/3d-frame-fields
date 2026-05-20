@@ -4,17 +4,17 @@
 vec6 compute_newton_step(const vec6& grad, const mat6& hess)
 {
 	double epsilon = 0.1;
-	double m = 1.0;
 	double gamma = 10.0;
 	double delta = std::max(abs(0.000015 * hess.trace()), epsilon);
+	double m = delta;
 
 	mat6 H_mod = hess;
 
 	Eigen::LLT<mat6> decomp = llt(H_mod);
 
 	while (decomp.info() != Eigen::Success) {
-		m = gamma * m;
 		H_mod = H_mod + m * mat6::Identity();
+		m = gamma * m;
 		decomp = llt(H_mod);
 	}
 

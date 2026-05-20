@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <numbers>
+#include <iostream>
 
 // eigen type definitions
 
