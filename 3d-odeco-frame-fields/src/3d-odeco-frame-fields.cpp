@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
 				int num_iter;
 				auto start = chrono::steady_clock::now();
-				odeco_mat projected_frame = odeco_frame_project(target_coords, 0, 1e-6, num_iter);
+				odeco_mat projected_frame = odeco_frame_project(target_coords, 0, 1e-9, 1e-5, num_iter);
 				auto end = chrono::steady_clock::now();
 
 				chrono::duration<double> time_elapsed = end - start;

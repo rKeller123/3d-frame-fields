@@ -3,6 +3,8 @@
 
 using namespace std;
 
+static double C;
+
 mat15x3 F{
 		{sqrt(numbers::pi) * 2.0 / 5, sqrt(numbers::pi) * 2.0 / 5, sqrt(numbers::pi) * 2.0 / 5},
 
@@ -75,18 +77,13 @@ vec15 odeco_frame_coords(const odeco_mat& frame)
 double loss(const vec15& y, const odeco_euler& frame)
 {
 	vec15 f = odeco_frame_coords(frame);
-	return loss(y, f);
+	return (f - y).squaredNorm() - C * (clamped_log(frame.lambda.x()) + clamped_log(frame.lambda.y()) + clamped_log(frame.lambda.z()));
 }
 
 double loss(const vec15& y, const odeco_mat& frame)
 {
 	vec15 f = odeco_frame_coords(frame);
-	return loss(y, f);
-}
-
-double loss(const vec15& y, const vec15& frame_coords)
-{
-	return (frame_coords - y).squaredNorm();
+	return (f - y).squaredNorm() - C * (clamped_log(frame.lambda.x()) + clamped_log(frame.lambda.y()) + clamped_log(frame.lambda.z()));
 }
 
 vec6 compute_gradient(const vec15& y, const odeco_euler& frame)
@@ -103,6 +100,10 @@ vec6 compute_gradient(const vec15& y, const odeco_euler& frame)
 	gradient(2) = -2 * y.transpose() * L_z * ref_frame;
 	
 	gradient.block<3, 1>(3, 0) = 2 * F.transpose() * ref_frame - 2 * F.transpose() * y;
+
+	gradient(3) -= C / frame.lambda.x();
+	gradient(4) -= C / frame.lambda.y();
+	gradient(5) -= C / frame.lambda.z();
 
 	return gradient;
 }
@@ -146,6 +147,10 @@ mat6 compute_hessian(const vec15& y, const odeco_euler& frame)
 	H.block<3, 3>(3, 0) = H_3;
 	H.block<3, 3>(3, 3) = H_4;
 
+	H(3, 3) += C / (frame.lambda.x() * frame.lambda.x());
+	H(4, 4) += C / (frame.lambda.y() * frame.lambda.y());
+	H(5, 5) += C / (frame.lambda.z() * frame.lambda.z());
+
 	return H;
 }
 
@@ -179,8 +184,9 @@ odeco_euler closest_seed(const vec15& y, int max_1d_res)
 }
 
 // TODO: consider non-negativity constraints for lambda
-odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
+odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, double reg, int& num_iterations)
 {
+	C = reg;
 	odeco_euler seed = closest_seed(y, max_1d_res_seed);
 
 	mat15 rotation = rotation_15d(seed.theta);

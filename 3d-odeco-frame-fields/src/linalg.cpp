@@ -337,3 +337,11 @@ Eigen::LLT<mat6> llt(const mat6& m)
     Eigen::LLT<mat6> llt_decomp(m);
     return llt_decomp;
 }
+
+double clamped_log(double x)
+{
+    if (x <= 0) {
+        return -INFINITY;
+    }
+    return log(x);
+}

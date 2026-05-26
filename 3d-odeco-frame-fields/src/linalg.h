@@ -60,3 +60,5 @@ mat15 exp(const mat15& m);
 
 vec6 eivals(const mat6& m);
 Eigen::LLT<mat6> llt(const mat6& m);
+
+double clamped_log(double x);
