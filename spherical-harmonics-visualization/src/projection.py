@@ -7,17 +7,17 @@ from time import time
 import plotly.graph_objects as go
 from dash import Dash, html, dcc, callback, Output, Input, exceptions, ALL
 
-from odeco import generate_sh_values, generate_sh_values_from_coordinates, generate_coordinates
+from odeco import generate_sh_values_from_coordinates, generate_coordinates
 
 executable_path = os.path.abspath("./3d-odeco-frame-fields/out/build/x64-debug/cli.exe")
 
-def run_cli(values: np.ndarray):
+def run_cli(mode: int, values: np.ndarray):
     values = np.asarray(values).flatten()
 
     if values.size != 15:
         raise ValueError(f"Expected 15 values, got {values.size}")
 
-    arg = ";".join(map(str, values))
+    arg = str(mode) + ";" + ";".join(map(str, values))
 
     result = subprocess.run(
         [executable_path, arg],
@@ -43,6 +43,15 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.H3("Controls"),
+
+            html.Div([
+                dcc.Checklist(id="z-aligned",
+                              options=[
+                                  {"label": "z aligned projection", "value": "z_proj"}
+                              ],
+                              value=[]),
+                html.Br()
+            ]),
 
             html.Div([
                 html.Label("Scale x"),
@@ -176,13 +185,15 @@ def update_input_plot(coords, overrides):
     Input("input-plot", "figure"),
     Input("coordinates-store", "data"),
     Input({"type": "override-coord", "index": ALL}, "value"),
+    Input("z-aligned", "value"),
 )
-def update_output(_, coords, overrides):
+def update_output(_, coords, overrides, z_aligned):
 
-    if coords is None:
+    if coords is None or z_aligned is None:
         raise exceptions.PreventUpdate
 
     final = np.array(coords)
+    mode = int('z_proj' in z_aligned)
 
     if overrides and any(v is not None for v in overrides):
         for i, v in enumerate(overrides):
@@ -190,7 +201,7 @@ def update_output(_, coords, overrides):
                 final[i] = v
 
     start = time()
-    num_iter, projection = run_cli(final)
+    num_iter, projection = run_cli(mode, final)
     end = time()
     sh_values, x, y, z = generate_sh_values_from_coordinates(projection)
 

@@ -3,25 +3,48 @@
 
 using namespace std;
 
-vec15 parse(const string& input)
+program_in parse(const std::string& input)
 {
-	stringstream ss(input);
+	std::stringstream ss(input);
 	vec15 values = vec15::Constant(0);
-	string item;
+	std::string item;
+
+	int mode;
+
+	if (!std::getline(ss, item, ';')) {
+		std::cerr << "Error: Not enough values in input string\n";
+		std::exit(1);
+	}
+
+	try {
+		mode = std::stoi(item);
+	}
+	catch (const std::exception&) {
+		std::cerr << "Error: Invalid mode: " << item << "\n";
+		std::exit(1);
+	}
+
+	if (mode != 0 && mode != 1) {
+		std::cerr << "Error: Invalid mode: " << mode << "\n";
+		std::exit(1);
+	}
 
 	for (int i = 0; i < 15; i++) {
-		if (!getline(ss, item, ';')) {
-			throw runtime_error("Not enough values in input string");
+		if (!std::getline(ss, item, ';')) {
+			std::cerr << "Error: Not enough values in input string\n";
+			std::exit(1);
 		}
+
 		try {
 			values(i) = std::stod(item);
 		}
-		catch (...) {
-			throw std::runtime_error("Invalid number: " + item);
+		catch (const std::exception&) {
+			std::cerr << "Error: Invalid number: " << item << "\n";
+			std::exit(1);
 		}
-		
 	}
-	return values;
+
+	return program_in{ .mode = mode, .target = values };
 }
 
 string stringify(int num_iter, const vec15& v)
@@ -42,38 +65,32 @@ string stringify(int num_iter, const vec15& v)
 int main(int argc, char *argv[])
 {
 	if (argc < 2) {
-		cerr << "Usage: Provide a string of 15 doubles seperated by ';'" << endl;
+		cerr << "Usage: \"mode(0 or 1);y0;...;y15\"" << endl;
 		return 1;
 	}
 
 	string input = argv[1];
 
-	vec15 target = parse(input);
+	program_in in = parse(input);
 
-	int num_iter;
-	odeco_mat proj = odeco_frame_project(target, 0, 1e-9, 1e-5, num_iter);
+	int mode = in.mode;
+	vec15 target = in.target;
 
-	static const double pi = numbers::pi;
-
-	vec15 z_aligned = vec15(
-		(7.0 / 10.0) * target(0) + (1.0 / 10.0) * target(10) - 1.0 / 5.0 * sqrt(5) * target(3) + (1.0 / 3.0) * sqrt(pi),
-		(27.0 / 28.0) * target(1) - 3.0 / 28.0 * sqrt(3) * target(8),
-		0,
-		(1.0 / 105.0) * sqrt(5) * (-21 * target(0) - 3 * target(10) + 6 * sqrt(5) * target(3) + 26 * sqrt(pi)),
-		0,
-		-3.0 / 28.0 * sqrt(3) * target(12) + (27.0 / 28.0) * target(5),
-		target(6),
-		0,
-		-3.0 / 28.0 * sqrt(3) * target(1) + (1.0 / 28.0) * target(8),
-		0,
-		(1.0 / 10.0) * target(0) + (1.0 / 70.0) * target(10) - 1.0 / 35.0 * sqrt(5) * target(3) + (1.0 / 7.0) * sqrt(pi),
-		0,
-		(1.0 / 28.0) * target(12) - 3.0 / 28.0 * sqrt(3) * target(5),
-		0,
-		target(14)
-	);
-
-	cout << stringify(num_iter, odeco_frame_coords(proj)) << endl;
+	switch (mode) {
+	case 0:
+	{
+		int num_iter;
+		odeco_mat proj = odeco_frame_project(target, 0, 1e-9, num_iter);
+		cout << stringify(num_iter, odeco_frame_coords(proj)) << endl;
+		break;
+	}
+	case 1:
+	{
+		vec15 proj_aligned = odeco_frame_project_aligned(target, vec3(0, 0, 1));
+		cout << stringify(0, proj_aligned) << endl;
+		break;
+	}
+	}
 
 	return 0;
 }

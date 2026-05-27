@@ -3,7 +3,7 @@
 
 using namespace std;
 
-static double C;
+static const double C = 1e-5;
 
 mat15x3 F{
 		{sqrt(numbers::pi) * 2.0 / 5, sqrt(numbers::pi) * 2.0 / 5, sqrt(numbers::pi) * 2.0 / 5},
@@ -184,9 +184,8 @@ odeco_euler closest_seed(const vec15& y, int max_1d_res)
 }
 
 // TODO: consider non-negativity constraints for lambda
-odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, double reg, int& num_iterations)
+odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
 {
-	C = reg;
 	odeco_euler seed = closest_seed(y, max_1d_res_seed);
 
 	mat15 rotation = rotation_15d(seed.theta);
@@ -236,6 +235,31 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, d
 	odeco_mat proj = odeco_mat(current_frame.lambda);
 	proj.rot = rotation;
 	return proj;
+}
+
+vec15 odeco_frame_project_aligned(const vec15& y, const vec3& d)
+{
+	// TODO implement general d aligned projection
+	vec15 z_aligned = vec15(
+		0.69999999999999996 * y(0) + 0.10000000000000001 * y(10) - 0.44721359549995798 * y(3) + 0.59081795030183859,
+		0.9642857142857143 * y(1) - 0.18557687223952254 * y(8),
+		0,
+		-0.44721359549995798 * y(0) - 0.063887656499993992 * y(10) + 0.28571428571428575 * y(3) + 0.98139533083577413,
+		0,
+		-0.18557687223952254 * y(12) + 0.9642857142857143 * y(5),
+		y(6),
+		0,
+		-0.18557687223952254 * y(1) + 0.035714285714285712 * y(8),
+		0,
+		0.10000000000000001 * y(0) + 0.014285714285714285 * y(10) - 0.063887656499993992 * y(3) + 0.25320769298650225,
+		0,
+		0.035714285714285712 * y(12) - 0.18557687223952254 * y(5),
+		0,
+		y(14)
+	);
+
+	return z_aligned;
+
 }
 
 odeco_euler::odeco_euler(const vec3& theta, const vec3& lambda)
