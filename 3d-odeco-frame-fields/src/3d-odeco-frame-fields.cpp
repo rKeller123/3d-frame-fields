@@ -17,7 +17,7 @@ int parse(const string& input)
 	}
 }
 
-void compute_projections_uniform(int n)
+void compute_projections(int n)
 {
 	double step = (numbers::pi + 1.08) / (2 * n);
 
@@ -52,7 +52,68 @@ void compute_projections_uniform(int n)
 	cout << time_elapsed.count() << "s total" << endl << endl;
 }
 
-void compute_aligned_projections_uniform(int n, const vec3& d)
+void benchmark_seed_random(int n, int seed)
+{
+	mt19937 gen(seed);
+
+	// can we normalize the target vector before projecting?
+	uniform_real_distribution<double> dist(-5.0, 5.0);
+
+	vec15 target;
+
+	auto first_start = chrono::steady_clock::now();
+
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			for (int k = 0; k < n; k++) {
+
+				for (int l = 0; l < 15; l++) {
+					target(l) = dist(gen);
+				}
+				target(0, 0) = 1.0;
+				target.block<5, 1>(1, 0).normalize();
+				target.block<9, 1>(6, 0).normalize();
+
+				int num_iter_ref;
+				auto start = chrono::steady_clock::now();
+				odeco_mat projected_frame_ref = odeco_frame_project(target, 0, 1e-9, num_iter_ref);
+				auto end = chrono::steady_clock::now();
+
+				chrono::duration<double> time_elapsed_ref = end - start;
+
+				double proj_loss_ref = loss(target, projected_frame_ref);
+
+				int num_iter_seed;
+				start = chrono::steady_clock::now();
+				odeco_mat projected_frame_seed = odeco_frame_project(target, 5, 1e-9, num_iter_seed);
+				end = chrono::steady_clock::now();
+
+				chrono::duration<double> time_elapsed_seed = end - start;
+
+				double proj_loss_seed = loss(target, projected_frame_seed);
+
+				cout << setprecision(4);
+				double time_speedup = time_elapsed_ref.count() / time_elapsed_seed.count();
+				double iter_ratio = (double)num_iter_ref / num_iter_seed;
+				double loss_ratio = proj_loss_ref / proj_loss_seed;
+
+				cout << "Time speedup: " << time_speedup
+					<< " | Iter ratio: " << iter_ratio
+					<< " | Loss ratio: " << loss_ratio
+					<< endl;
+
+			}
+		}
+	}
+
+	auto last_end = chrono::steady_clock::now();
+
+	chrono::duration<double> time_elapsed = last_end - first_start;
+
+	cout << time_elapsed.count() << "s total" << endl << endl;
+}
+
+void compute_aligned_projections(int n, const vec3& d)
 {
 	double step = (numbers::pi + 1.08) / (2 * n);
 
@@ -97,8 +158,9 @@ int main(int argc, char *argv[])
 		n = parse(argv[1]);
 	}
 
-	compute_projections_uniform(n);
-	//compute_aligned_projections_uniform(n, vec3(0, 0, 1));
+	compute_projections(n);
+	//benchmark_seed_random(n, 42);
+	//compute_aligned_projections(n, vec3(0, 0, 1));
 
 	return 0;
 }
