@@ -127,15 +127,16 @@ void compute_aligned_projections(int n, const vec3& d)
 				vec15 target_coords = odeco_frame_coords(target_frame);
 
 				auto start = chrono::steady_clock::now();
-				vec15 projected_coords = odeco_frame_project_aligned(target_coords, d);
+				int num_iter;
+				odeco_mat projected_frame = odeco_frame_project_aligned(target_coords, d, 0, 1e-9, num_iter);
 				auto end = chrono::steady_clock::now();
 
 				chrono::duration<double> time_elapsed = end - start;
 
-				double proj_loss = (target_coords - projected_coords).squaredNorm();
+				double proj_loss = loss(target_coords, projected_frame);
 
 				cout << setprecision(4);
-				cout << i << "i " << j << "j " << k << "k | " << time_elapsed.count() << "s | " << proj_loss << " loss" << endl;
+				cout << i << "i " << j << "j " << k << "k | " << time_elapsed.count() << "s | " << num_iter << "it | " << proj_loss << " loss" << endl;
 			}
 		}
 	}
@@ -158,9 +159,9 @@ int main(int argc, char *argv[])
 		n = parse(argv[1]);
 	}
 
-	compute_projections(n);
+	//compute_projections(n);
 	//benchmark_seed_random(n, 42);
-	//compute_aligned_projections(n, vec3(0, 0, 1));
+	compute_aligned_projections(n, vec3(0, 1, 0));
 
 	return 0;
 }

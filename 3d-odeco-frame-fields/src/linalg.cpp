@@ -255,6 +255,26 @@ mat15 rotation_15d(const vec3& theta)
     return rotation_15d(theta.x(), theta.y(), theta.z());
 }
 
+mat3 rotate_rodrigues(const vec3& axis, double theta)
+{
+    mat3 nnT = axis * axis.transpose();
+    mat3 cross = mat3{
+        {0, -axis.z(), axis.y()},
+        {axis.z(), 0, -axis.x()},
+        {-axis.y(), axis.x(), 0}
+    };
+    return nnT + cos(theta) * (mat3::Identity() - nnT) + sin(theta) * cross;
+}
+
+mat15 rotation_from_axis_angle(const vec3& axis, double theta)
+{
+    mat3 rot3 = rotate_rodrigues(axis, theta);
+
+    vec3 euler = rot3.canonicalEulerAngles(0, 1, 2);
+
+    return rotation_15d(euler);
+}
+
 mat15 lie_x_15d()
 {
     mat15 m = mat15::Zero();
@@ -310,6 +330,11 @@ vec15 block_prod_vec(const mat15& a, const vec15& b)
     res.block<9, 1>(6, 0) = a.block<9, 9>(6, 6) * b.block<9, 1>(6, 0);
     
     return res;
+}
+
+vec3 cross(const vec3& v0, const vec3& v1)
+{
+    return v0.cross(v1);
 }
 
 double norm(const vec15& v)

@@ -35,6 +35,9 @@ mat9 rotation_x_9d(double alpha);
 mat15 rotation_15d(double alpha, double beta, double gamma);
 mat15 rotation_15d(const vec3& theta);
 
+mat3 rotate_rodrigues(const vec3& axis, double theta);
+mat15 rotation_from_axis_angle(const vec3 & axis, double theta);
+
 mat15 lie_x_15d();
 mat15 lie_y_15d();
 mat15 lie_z_15d();
@@ -51,6 +54,8 @@ inline double dot(const Eigen::MatrixBase<DerivedV0>& v0, const Eigen::MatrixBas
 {
 	return v0.dot(v1);
 }
+
+vec3 cross(const vec3& v0, const vec3& v1);
 
 double norm(const vec15& v);
 

@@ -37,4 +37,4 @@ mat6 compute_hessian(const vec15& y, const odeco_euler& frame);
 odeco_euler closest_seed(const vec15& y, int max_1d_res);
 
 odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations);
-vec15 odeco_frame_project_aligned(const vec15& y, const vec3& d);
+odeco_mat odeco_frame_project_aligned(const vec15& y, const vec3& d, int max_1d_res_seed, double tol, int& num_iterations);

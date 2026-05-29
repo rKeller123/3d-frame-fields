@@ -222,7 +222,7 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 		}
 		
 		// line search step size
-		t = compute_step_size(target, current_frame, newton_step, -newton_decrement, 1.0, 0.01, 0.25);
+		t = compute_step_size(target, current_frame, newton_step, -newton_decrement, 1.0, 0.1, 0.5);
 		
 		// update frame description
 		current_frame = update_frame(current_frame, newton_step, t);
@@ -237,28 +237,52 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 	return proj;
 }
 
-vec15 odeco_frame_project_aligned(const vec15& y, const vec3& d)
+odeco_mat odeco_frame_project_aligned(const vec15& y, const vec3& d, int max_1d_res_seed, double tol, int& num_iterations)
 {
-	// TODO implement general d aligned projection
-	vec15 z_aligned = vec15(
-		0.69999999999999996 * y(0) + 0.10000000000000001 * y(10) - 0.44721359549995798 * y(3) + 0.59081795030183859,
-		0.9642857142857143 * y(1) - 0.18557687223952254 * y(8),
-		0,
-		-0.44721359549995798 * y(0) - 0.063887656499993992 * y(10) + 0.28571428571428575 * y(3) + 0.98139533083577413,
-		0,
-		-0.18557687223952254 * y(12) + 0.9642857142857143 * y(5),
-		y(6),
-		0,
-		-0.18557687223952254 * y(1) + 0.035714285714285712 * y(8),
-		0,
-		0.10000000000000001 * y(0) + 0.014285714285714285 * y(10) - 0.063887656499993992 * y(3) + 0.25320769298650225,
-		0,
-		0.035714285714285712 * y(12) - 0.18557687223952254 * y(5),
-		0,
-		y(14)
-	);
+	if (d.cwiseAbs().maxCoeff() < 1e-2) {
+		cerr << "Alignement axis is the zero vector - please provide a different alignement vector" << endl;
+		std::exit(1);
+	}
 
-	return z_aligned;
+	vec3 d_normalized = d.normalized();
+
+	vec3 z = vec3(0, 0, 1);
+
+	vec15 target = y;
+	mat15 R_z_to_d;
+	bool isZeqD = (z - d_normalized).cwiseAbs().maxCoeff() < 1e-2;
+	if (!isZeqD) {
+		double angle = acos(dot(z, d_normalized));
+		vec3 axis = cross(z, d_normalized);
+		R_z_to_d = rotation_from_axis_angle(axis, angle);
+		target = R_z_to_d.transpose() * y;
+
+	}
+
+	vec15 z_aligned_target = vec15(
+		0.69999999999999996 * target(0) + 0.10000000000000001 * target(10) - 0.44721359549995798 * target(3) + 0.59081795030183859,
+		0.9642857142857143 * target(1) - 0.18557687223952254 * y(8),
+		0,
+		-0.44721359549995798 * target(0) - 0.063887656499993992 * target(10) + 0.28571428571428575 * target(3) + 0.98139533083577413,
+		0,
+		-0.18557687223952254 * target(12) + 0.9642857142857143 * target(5),
+		target(6),
+		0,
+		-0.18557687223952254 * target(1) + 0.035714285714285712 * target(8),
+		0,
+		0.10000000000000001 * target(0) + 0.014285714285714285 * target(10) - 0.063887656499993992 * target(3) + 0.25320769298650225,
+		0,
+		0.035714285714285712 * target(12) - 0.18557687223952254 * target(5),
+		0,
+		target(14)
+	);
+	// TODO do not depend on the general projection
+	odeco_mat z_aligned_proj = odeco_frame_project(z_aligned_target, max_1d_res_seed, tol, num_iterations);
+	
+	if (!isZeqD) {
+		z_aligned_proj.rot = block_prod_mat(R_z_to_d, z_aligned_proj.rot);
+	}
+	return z_aligned_proj;
 
 }
 

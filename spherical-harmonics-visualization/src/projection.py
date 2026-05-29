@@ -11,13 +11,20 @@ from odeco import generate_sh_values_from_coordinates, generate_coordinates
 
 executable_path = os.path.abspath("./3d-odeco-frame-fields/out/build/x64-debug/cli.exe")
 
-def run_cli(mode: int, values: np.ndarray):
+def run_cli(mode: int, values: np.ndarray, d: np.ndarray):
     values = np.asarray(values).flatten()
 
     if values.size != 15:
         raise ValueError(f"Expected 15 values, got {values.size}")
 
-    arg = str(mode) + ";" + ";".join(map(str, values))
+    parts = [str(mode)]
+
+    if mode == 1:
+        parts.extend(map(str, d))
+
+    parts.extend(map(str, values))
+
+    arg = ";".join(parts)
 
     result = subprocess.run(
         [executable_path, arg],
@@ -47,10 +54,13 @@ app.layout = html.Div([
             html.Div([
                 dcc.Checklist(id="z-aligned",
                               options=[
-                                  {"label": "z aligned projection", "value": "z_proj"}
+                                  {"label": "aligned projection", "value": "z_proj"}
                               ],
                               value=[]),
-                html.Br()
+                dcc.Input(id="d_x_input", type="number", value=0),
+                dcc.Input(id="d_y_input", type="number", value=0),
+                dcc.Input(id="d_z_input", type="number", value=1),
+                html.Br(), html.Br(),
             ]),
 
             html.Div([
@@ -186,14 +196,18 @@ def update_input_plot(coords, overrides):
     Input("coordinates-store", "data"),
     Input({"type": "override-coord", "index": ALL}, "value"),
     Input("z-aligned", "value"),
+    Input("d_x_input", "value"),
+    Input("d_y_input", "value"),
+    Input("d_z_input", "value"),
 )
-def update_output(_, coords, overrides, z_aligned):
+def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
 
     if coords is None or z_aligned is None:
         raise exceptions.PreventUpdate
 
     final = np.array(coords)
     mode = int('z_proj' in z_aligned)
+    d = np.array([d_x, d_y, d_z])
 
     if overrides and any(v is not None for v in overrides):
         for i, v in enumerate(overrides):
@@ -201,7 +215,7 @@ def update_output(_, coords, overrides, z_aligned):
                 final[i] = v
 
     start = time()
-    num_iter, projection = run_cli(mode, final)
+    num_iter, projection = run_cli(mode, final, d)
     end = time()
     sh_values, x, y, z = generate_sh_values_from_coordinates(projection)
 

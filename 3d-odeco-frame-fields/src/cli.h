@@ -13,4 +13,5 @@ struct program_in {
 	// 1: odeco_frame_project_aligned (to z axis)
 	int mode;
 	vec15 target;
+	vec3 direction;
 };
