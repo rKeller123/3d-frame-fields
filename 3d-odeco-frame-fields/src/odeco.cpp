@@ -202,7 +202,7 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 	double newton_decrement;
 	double t;
 
-	for (int i = 0; i < max_iter; i++) {
+	for (int i = 1; i <= max_iter; i++) {
 		// compute gradient
 		grad = compute_gradient(target, current_frame);
 
@@ -217,8 +217,28 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 		
 		// stop if dec < tol
 		if (newton_decrement / 2 <= tol) {
-			num_iterations = i;
-			break;
+			// if the hessian is not pos def then we are in a saddle point
+
+			Eigen::LLT<mat6> decomp = llt(hess);
+
+			if (decomp.info() == Eigen::Success) {
+				//std::cout << "break standard" << std::endl;
+				num_iterations = i;
+				break;
+			}
+			//std::cout << "saddle point detected" << std::endl;
+			// hess is not pos def.
+			// find smallest eigenvalue and corresponding eigenvector
+			// the newton step will be 0.5 * this eigenvector
+			vec6 eivec = eivector_smallest_ev(hess);
+			newton_step = 0.5 * eivec;
+
+			newton_decrement = compute_newton_decrement(grad, newton_step);
+			if (newton_decrement / 2 <= tol) {
+				//std::cout << "break in saddle point" << std::endl;
+				num_iterations = i;
+				break;
+			}
 		}
 		
 		// line search step size

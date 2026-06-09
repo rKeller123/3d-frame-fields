@@ -70,9 +70,9 @@ void benchmark_seed_random(int n, int seed)
 				for (int l = 0; l < 15; l++) {
 					target(l) = dist(gen);
 				}
-				target(0, 0) = 1.0;
-				target.block<5, 1>(1, 0).normalize();
-				target.block<9, 1>(6, 0).normalize();
+				//target(0, 0) = 1.0;
+				//target.block<5, 1>(1, 0).normalize();
+				//target.block<9, 1>(6, 0).normalize();
 
 				int num_iter_ref;
 				auto start = chrono::steady_clock::now();
@@ -97,6 +97,7 @@ void benchmark_seed_random(int n, int seed)
 				double iter_ratio = (double)num_iter_ref / num_iter_seed;
 				double loss_ratio = proj_loss_ref / proj_loss_seed;
 
+				// > 1 means using a grid searched seed is better
 				cout << "Time speedup: " << time_speedup
 					<< " | Iter ratio: " << iter_ratio
 					<< " | Loss ratio: " << loss_ratio
@@ -159,9 +160,9 @@ int main(int argc, char *argv[])
 		n = parse(argv[1]);
 	}
 
-	//compute_projections(n);
+	compute_projections(n);
 	//benchmark_seed_random(n, 42);
-	compute_aligned_projections(n, vec3(0, 1, 0));
+	//compute_aligned_projections(n, vec3(0, 1, 0));
 
 	return 0;
 }

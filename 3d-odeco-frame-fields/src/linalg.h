@@ -64,6 +64,7 @@ double norm(const vec15& v);
 mat15 exp(const mat15& m);
 
 vec6 eivals(const mat6& m);
+vec6 eivector_smallest_ev(const mat6& m);
 Eigen::LLT<mat6> llt(const mat6& m);
 
 double clamped_log(double x);

@@ -357,6 +357,17 @@ vec6 eivals(const mat6& m)
     return solver.eigenvalues();
 }
 
+vec6 eivector_smallest_ev(const mat6& m)
+{
+    Eigen::SelfAdjointEigenSolver<mat6> solver(m);
+
+    if (solver.info() != Eigen::Success) {
+        throw std::runtime_error("Eigenvalue decomposition failed");
+    }
+    // eigenvalues are sorted in ascending order
+    return solver.eigenvectors().col(0);
+}
+
 Eigen::LLT<mat6> llt(const mat6& m)
 {
     Eigen::LLT<mat6> llt_decomp(m);

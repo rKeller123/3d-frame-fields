@@ -12,11 +12,16 @@ vec6 compute_newton_step(const vec6& grad, const mat6& hess)
 
 	Eigen::LLT<mat6> decomp = llt(H_mod);
 
+	int n_fails = 0;
+
 	while (decomp.info() != Eigen::Success) {
 		H_mod = H_mod + m * mat6::Identity();
 		m = gamma * m;
 		decomp = llt(H_mod);
+		n_fails++;
 	}
+
+	//std::cout << "N failed cholesky: " << n_fails << std::endl;
 
 	mat6 L = decomp.matrixL();
 	vec6 y = L.triangularView<Eigen::Lower>().solve(-grad);
