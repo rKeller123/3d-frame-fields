@@ -11,9 +11,32 @@ endif()
 
 project ("3d-odeco-frame-fields")
 
+add_library(core OBJECT
+    src/linalg.cpp
+    src/odeco.cpp
+    src/newton.cpp
+)
+
+target_include_directories(core PUBLIC src)
+target_link_libraries(core PUBLIC Eigen3::Eigen)
+set_target_properties(core PROPERTIES CXX_STANDARD 20)
+
+target_compile_options(core PRIVATE
+    $<$<CXX_COMPILER_ID:GNU>:
+        -O3
+        -march=native
+        -DEIGEN_NO_DEBUG
+    >
+    $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release>>:
+        /O2
+        /arch:AVX2
+        /DEIGEN_NO_DEBUG
+    >
+)
+
 # Add source to this project's executable.
-add_executable (3d-odeco-frame-fields "src/3d-odeco-frame-fields.cpp" "src/3d-odeco-frame-fields.h"   "src/linalg.h"  "src/linalg.cpp" "src/odeco.h" "src/odeco.cpp" "src/newton.h" "src/newton.cpp")
-add_executable (cli "src/cli.cpp" "src/cli.h"   "src/linalg.h"  "src/linalg.cpp" "src/odeco.h" "src/odeco.cpp" "src/newton.h" "src/newton.cpp")
+add_executable(3d-odeco-frame-fields src/3d-odeco-frame-fields.cpp)
+add_executable(cli src/cli.cpp)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET 3d-odeco-frame-fields PROPERTY CXX_STANDARD 20)
@@ -47,9 +70,5 @@ target_compile_options(3d-odeco-frame-fields PRIVATE
 
 
 find_package(Eigen3 CONFIG REQUIRED)
-target_link_libraries(3d-odeco-frame-fields PRIVATE Eigen3::Eigen)
-target_link_libraries(cli PRIVATE Eigen3::Eigen)
-
-#find_package(OpenMP)
-#target_link_libraries(3d-odeco-frame-fields PRIVATE OpenMP::OpenMP_CXX)
-#target_link_libraries(cli PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(3d-odeco-frame-fields PRIVATE core Eigen3::Eigen)
+target_link_libraries(cli PRIVATE core Eigen3::Eigen)

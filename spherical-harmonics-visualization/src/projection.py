@@ -1,15 +1,20 @@
 import subprocess
 import numpy as np
 import os
+import platform
 import math
 from time import time
+
+PLATFORM = platform.system()
+executable_path = os.path.abspath("./3d-odeco-frame-fields/build/cli")
+if (PLATFORM == "Windows"):
+    executable_path = os.path.abspath("./3d-odeco-frame-fields/out/build/x64-debug/cli.exe")
+
 
 import plotly.graph_objects as go
 from dash import Dash, html, dcc, callback, Output, Input, exceptions, ALL
 
 from odeco import generate_sh_values_from_coordinates, generate_coordinates
-
-executable_path = os.path.abspath("./3d-odeco-frame-fields/out/build/x64-debug/cli.exe")
 
 def run_cli(mode: int, values: np.ndarray, d: np.ndarray):
     values = np.asarray(values).flatten()
