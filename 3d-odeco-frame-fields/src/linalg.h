@@ -8,6 +8,7 @@
 
 // eigen type definitions
 
+typedef Eigen::Matrix<double, 2, 1> vec2;
 typedef Eigen::Matrix<double, 3, 1> vec3;
 typedef Eigen::Matrix<double, 5, 1> vec5;
 typedef Eigen::Matrix<double, 6, 1> vec6;
@@ -32,6 +33,7 @@ mat9 rotation_z_9d(double gamma);
 mat9 rotation_y_9d(double beta);
 mat9 rotation_x_9d(double alpha);
 
+mat15 rotation_z_15d(double theta);
 mat15 rotation_15d(double alpha, double beta, double gamma);
 mat15 rotation_15d(const vec3& theta);
 
@@ -65,6 +67,8 @@ mat15 exp(const mat15& m);
 
 vec6 eivals(const mat6& m);
 vec6 eivector_smallest_ev(const mat6& m);
+vec3 eivector_smallest_ev(const mat3& m);
 Eigen::LLT<mat6> llt(const mat6& m);
+Eigen::LLT<mat3> llt(const mat3& m);
 
 double clamped_log(double x);

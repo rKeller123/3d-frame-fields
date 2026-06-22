@@ -5,6 +5,28 @@
 #include <numbers>
 #include <iostream>
 
+using namespace std;
+
+static const mat15x3 F{
+		{sqrt(numbers::pi) * 2.0 / 5, sqrt(numbers::pi) * 2.0 / 5, sqrt(numbers::pi) * 2.0 / 5},
+
+		{0, 0, 0},
+		{0, 0, 0},
+		{-(4.0 * sqrt(numbers::pi)) / (7 * sqrt(5)), -(4.0 * sqrt(numbers::pi)) / (7 * sqrt(5)), 2 * (4.0 * sqrt(numbers::pi)) / (7 * sqrt(5))},
+		{0, 0, 0},
+		{(4 * sqrt(3 * numbers::pi)) / (7 * sqrt(5)), -(4 * sqrt(3 * numbers::pi)) / (7 * sqrt(5)), 0},
+
+		{0, 0, 0},
+		{0, 0, 0},
+		{0, 0, 0},
+		{0, 0, 0},
+		{2 * sqrt(numbers::pi) / 35, 2 * sqrt(numbers::pi) / 35, 16 * sqrt(numbers::pi) / 105},
+		{0, 0, 0},
+		{-(4 * sqrt(numbers::pi)) / (21 * sqrt(5)), (4 * sqrt(numbers::pi)) / (21 * sqrt(5)), 0},
+		{0, 0, 0},
+		{(2 * sqrt(numbers::pi)) / (3 * sqrt(35)), (2 * sqrt(numbers::pi)) / (3 * sqrt(35)), 0}
+};
+
 struct odeco_euler {
 	vec3 theta;
 	vec3 lambda;
@@ -37,4 +59,3 @@ mat6 compute_hessian(const vec15& y, const odeco_euler& frame);
 odeco_euler closest_seed(const vec15& y, int max_1d_res);
 
 odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations);
-odeco_mat odeco_frame_project_aligned(const vec15& y, const vec3& d, int max_1d_res_seed, double tol, int& num_iterations);

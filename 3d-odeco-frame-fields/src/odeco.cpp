@@ -5,26 +5,6 @@ using namespace std;
 
 static const double C = 1e-5;
 
-mat15x3 F{
-		{sqrt(numbers::pi) * 2.0 / 5, sqrt(numbers::pi) * 2.0 / 5, sqrt(numbers::pi) * 2.0 / 5},
-
-		{0, 0, 0},
-		{0, 0, 0},
-		{-(4.0 * sqrt(numbers::pi)) / (7 * sqrt(5)), -(4.0 * sqrt(numbers::pi)) / (7 * sqrt(5)), 2 * (4.0 * sqrt(numbers::pi)) / (7 * sqrt(5))},
-		{0, 0, 0},
-		{(4 * sqrt(3 * numbers::pi)) / (7 * sqrt(5)), -(4 * sqrt(3 * numbers::pi)) / (7 * sqrt(5)), 0},
-
-		{0, 0, 0},
-		{0, 0, 0},
-		{0, 0, 0},
-		{0, 0, 0},
-		{2 * sqrt(numbers::pi) / 35, 2 * sqrt(numbers::pi) / 35, 16 * sqrt(numbers::pi) / 105},
-		{0, 0, 0},
-		{-(4 * sqrt(numbers::pi)) / (21 * sqrt(5)), (4 * sqrt(numbers::pi)) / (21 * sqrt(5)), 0},
-		{0, 0, 0},
-		{(2 * sqrt(numbers::pi)) / (3 * sqrt(35)), (2 * sqrt(numbers::pi)) / (3 * sqrt(35)), 0}
-};
-
 odeco_euler operator+(const odeco_euler& f0, const odeco_euler& f1)
 {
 	return odeco_euler(f0.theta + f1.theta, f0.lambda + f1.lambda);
@@ -186,12 +166,11 @@ odeco_euler closest_seed(const vec15& y, int max_1d_res)
 // TODO: consider non-negativity constraints for lambda
 odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
 {
-	odeco_euler seed = closest_seed(y, max_1d_res_seed);
+	odeco_euler current_frame = closest_seed(y, max_1d_res_seed);
 
-	mat15 rotation = rotation_15d(seed.theta);
+	mat15 rotation = rotation_15d(current_frame.theta);
 
 	vec15 target = rotation.transpose() * y;
-	odeco_euler current_frame(vec3(1.0, 1.0, 1.0));
 
 	int max_iter = 1024;
 	num_iterations = max_iter;
@@ -255,55 +234,6 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 	odeco_mat proj = odeco_mat(current_frame.lambda);
 	proj.rot = rotation;
 	return proj;
-}
-
-odeco_mat odeco_frame_project_aligned(const vec15& y, const vec3& d, int max_1d_res_seed, double tol, int& num_iterations)
-{
-	if (d.cwiseAbs().maxCoeff() < 1e-2) {
-		cerr << "Alignement axis is the zero vector - please provide a different alignement vector" << endl;
-		std::exit(1);
-	}
-
-	vec3 d_normalized = d.normalized();
-
-	vec3 z = vec3(0, 0, 1);
-
-	vec15 target = y;
-	mat15 R_z_to_d;
-	bool isZeqD = (z - d_normalized).cwiseAbs().maxCoeff() < 1e-2;
-	if (!isZeqD) {
-		double angle = acos(dot(z, d_normalized));
-		vec3 axis = cross(z, d_normalized);
-		R_z_to_d = rotation_from_axis_angle(axis, angle);
-		target = R_z_to_d.transpose() * y;
-
-	}
-
-	vec15 z_aligned_target = vec15(
-		0.69999999999999996 * target(0) + 0.10000000000000001 * target(10) - 0.44721359549995798 * target(3) + 0.59081795030183859,
-		0.9642857142857143 * target(1) - 0.18557687223952254 * y(8),
-		0,
-		-0.44721359549995798 * target(0) - 0.063887656499993992 * target(10) + 0.28571428571428575 * target(3) + 0.98139533083577413,
-		0,
-		-0.18557687223952254 * target(12) + 0.9642857142857143 * target(5),
-		target(6),
-		0,
-		-0.18557687223952254 * target(1) + 0.035714285714285712 * target(8),
-		0,
-		0.10000000000000001 * target(0) + 0.014285714285714285 * target(10) - 0.063887656499993992 * target(3) + 0.25320769298650225,
-		0,
-		0.035714285714285712 * target(12) - 0.18557687223952254 * target(5),
-		0,
-		target(14)
-	);
-	// TODO do not depend on the general projection
-	odeco_mat z_aligned_proj = odeco_frame_project(z_aligned_target, max_1d_res_seed, tol, num_iterations);
-	
-	if (!isZeqD) {
-		z_aligned_proj.rot = block_prod_mat(R_z_to_d, z_aligned_proj.rot);
-	}
-	return z_aligned_proj;
-
 }
 
 odeco_euler::odeco_euler(const vec3& theta, const vec3& lambda)

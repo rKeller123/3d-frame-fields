@@ -129,7 +129,7 @@ void compute_aligned_projections(int n, const vec3& d)
 
 				auto start = chrono::steady_clock::now();
 				int num_iter;
-				odeco_mat projected_frame = odeco_frame_project_aligned(target_coords, d, 0, 1e-9, num_iter);
+				odeco_mat_aligned projected_frame = odeco_frame_project_aligned(target_coords, d, 1e-9, num_iter);
 				auto end = chrono::steady_clock::now();
 
 				chrono::duration<double> time_elapsed = end - start;
@@ -161,8 +161,8 @@ int main(int argc, char *argv[])
 	}
 
 	compute_projections(n);
-	//benchmark_seed_random(n, 42);
-	//compute_aligned_projections(n, vec3(0, 1, 0));
+	// benchmark_seed_random(n, 42);
+	// compute_aligned_projections(n, vec3(0, 1, 0));
 
 	return 0;
 }
