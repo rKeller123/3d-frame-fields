@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include "odeco.h"
+#include "odeco_aligned.h"
 #include "linalg.h"
 #include <numbers>
 #include <iomanip>

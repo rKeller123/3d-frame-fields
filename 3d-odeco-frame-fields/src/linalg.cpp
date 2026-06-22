@@ -219,6 +219,19 @@ mat9 rotation_x_9d(double alpha)
     };
 }
 
+mat15 rotation_z_15d(double theta)
+{
+    mat5 rot_z_5d = rotation_z_5d(theta);
+    mat9 rot_z_9d = rotation_z_9d(theta);
+
+    mat15 rot = mat15::Zero();
+
+    rot(0, 0) = 1.0;
+    rot.block<5, 5>(1, 1) = rot_z_5d;
+    rot.block<9, 9>(6, 6) = rot_z_9d;
+
+    return rot;
+}
 
 mat15 rotation_15d(double alpha, double beta, double gamma)
 {
@@ -357,6 +370,7 @@ vec6 eivals(const mat6& m)
     return solver.eigenvalues();
 }
 
+
 vec6 eivector_smallest_ev(const mat6& m)
 {
     Eigen::SelfAdjointEigenSolver<mat6> solver(m);
@@ -368,9 +382,26 @@ vec6 eivector_smallest_ev(const mat6& m)
     return solver.eigenvectors().col(0);
 }
 
+vec3 eivector_smallest_ev(const mat3& m)
+{
+    Eigen::SelfAdjointEigenSolver<mat3> solver(m);
+
+    if (solver.info() != Eigen::Success) {
+        throw std::runtime_error("Eigenvalue decomposition failed");
+    }
+    // eigenvalues are sorted in ascending order
+    return solver.eigenvectors().col(0);
+}
+
 Eigen::LLT<mat6> llt(const mat6& m)
 {
     Eigen::LLT<mat6> llt_decomp(m);
+    return llt_decomp;
+}
+
+Eigen::LLT<mat3> llt(const mat3& m)
+{
+    Eigen::LLT<mat3> llt_decomp(m);
     return llt_decomp;
 }
 

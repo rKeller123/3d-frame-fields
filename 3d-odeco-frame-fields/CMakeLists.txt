@@ -15,6 +15,7 @@ add_library(core OBJECT
     src/linalg.cpp
     src/odeco.cpp
     src/newton.cpp
+    src/odeco_aligned.cpp
 )
 
 target_include_directories(core PUBLIC src)
