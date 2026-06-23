@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 	case 1:
 	{
 		odeco_mat_aligned proj_aligned = odeco_frame_project_aligned(target, direction, 1e-9, num_iter);
-		cout << stringify(num_iter, odeco_frame_coords_aligned(proj_aligned)) << endl;
+		cout << stringify(num_iter, odeco_frame_coords(proj_aligned)) << endl;
 		break;
 	}
 	}

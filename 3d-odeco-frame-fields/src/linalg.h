@@ -52,7 +52,7 @@ mat15 block_prod_mat(const mat15& a, const mat15& b);
 vec15 block_prod_vec(const mat15& a, const vec15& b);
 
 template<typename DerivedV0, typename DerivedV1>
-inline double dot(const Eigen::MatrixBase<DerivedV0>& v0, const Eigen::MatrixBase<DerivedV1>& v1)
+double dot(const Eigen::MatrixBase<DerivedV0>& v0, const Eigen::MatrixBase<DerivedV1>& v1)
 {
 	return v0.dot(v1);
 }
@@ -65,10 +65,23 @@ double norm(const vec15& v);
 
 mat15 exp(const mat15& m);
 
-vec6 eivals(const mat6& m);
-vec6 eivector_smallest_ev(const mat6& m);
-vec3 eivector_smallest_ev(const mat3& m);
-Eigen::LLT<mat6> llt(const mat6& m);
-Eigen::LLT<mat3> llt(const mat3& m);
+template<typename mat>
+auto eivector_smallest_ev(const mat& m)
+{
+	Eigen::SelfAdjointEigenSolver<mat> solver(m);
+
+	if (solver.info() != Eigen::Success) {
+		throw std::runtime_error("Eigenvalue decomposition failed");
+	}
+	// eigenvalues are sorted in ascending order
+	return solver.eigenvectors().col(0);
+}
+
+template<typename mat>
+Eigen::LLT<mat> llt(const mat& m)
+{
+	Eigen::LLT<mat> llt_decomp(m);
+	return llt_decomp;
+}
 
 double clamped_log(double x);
