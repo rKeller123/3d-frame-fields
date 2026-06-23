@@ -160,9 +160,9 @@ int main(int argc, char *argv[])
 		n = parse(argv[1]);
 	}
 
-	compute_projections(n);
+	// compute_projections(n);
 	// benchmark_seed_random(n, 42);
-	// compute_aligned_projections(n, vec3(0, 1, 0));
+	compute_aligned_projections(n, vec3(0, 1, 0));
 
 	return 0;
 }

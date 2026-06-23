@@ -360,51 +360,6 @@ mat15 exp(const mat15& m)
     return m.exp();
 }
 
-vec6 eivals(const mat6& m)
-{
-    Eigen::SelfAdjointEigenSolver<mat6> solver(m);
-
-    if (solver.info() != Eigen::Success) {
-        throw std::runtime_error("Eigenvalue decomposition failed");
-    }
-    return solver.eigenvalues();
-}
-
-
-vec6 eivector_smallest_ev(const mat6& m)
-{
-    Eigen::SelfAdjointEigenSolver<mat6> solver(m);
-
-    if (solver.info() != Eigen::Success) {
-        throw std::runtime_error("Eigenvalue decomposition failed");
-    }
-    // eigenvalues are sorted in ascending order
-    return solver.eigenvectors().col(0);
-}
-
-vec3 eivector_smallest_ev(const mat3& m)
-{
-    Eigen::SelfAdjointEigenSolver<mat3> solver(m);
-
-    if (solver.info() != Eigen::Success) {
-        throw std::runtime_error("Eigenvalue decomposition failed");
-    }
-    // eigenvalues are sorted in ascending order
-    return solver.eigenvectors().col(0);
-}
-
-Eigen::LLT<mat6> llt(const mat6& m)
-{
-    Eigen::LLT<mat6> llt_decomp(m);
-    return llt_decomp;
-}
-
-Eigen::LLT<mat3> llt(const mat3& m)
-{
-    Eigen::LLT<mat3> llt_decomp(m);
-    return llt_decomp;
-}
-
 double clamped_log(double x)
 {
     if (x <= 0) {

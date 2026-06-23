@@ -40,31 +40,31 @@ vec15 ref_frame_coords_aligned(const vec2& lambda)
     return ref_frame_coords(l);
 }
 
-vec15 odeco_frame_coords_aligned(const odeco_euler_aligned& frame)
+vec15 odeco_frame_coords(const odeco_euler_aligned& frame)
 {
     mat15 rotation = rotation_z_15d(frame.theta);
     vec15 ref_frame = ref_frame_coords_aligned(frame.lambda);
     return block_prod_vec(rotation, ref_frame);
 }
 
-vec15 odeco_frame_coords_aligned(const odeco_mat_aligned& frame)
+vec15 odeco_frame_coords(const odeco_mat_aligned& frame)
 {
     return block_prod_vec(frame.rot, ref_frame_coords_aligned(frame.lambda));
 }
 
 double loss(const vec15& y, const odeco_euler_aligned& frame)
 {
-    vec15 f = odeco_frame_coords_aligned(frame);
+    vec15 f = odeco_frame_coords(frame);
     return (f - y).squaredNorm() - C * ( clamped_log(frame.lambda.x()) + clamped_log(frame.lambda.y()));
 }
 
 double loss(const vec15& y, const odeco_mat_aligned& frame)
 {
-    vec15 f = odeco_frame_coords_aligned(frame);
+    vec15 f = odeco_frame_coords(frame);
     return (f - y).squaredNorm() - C * ( clamped_log(frame.lambda.x()) + clamped_log(frame.lambda.y()));
 }
 
-vec3 compute_gradient_aligned(const vec15& y, const odeco_euler_aligned& frame)
+vec3 compute_gradient(const vec15& y, const odeco_euler_aligned& frame)
 {
     vec15 ref_frame = ref_frame_coords_aligned(frame.lambda);
     static const mat15 L_z = lie_z_15d();
@@ -81,7 +81,7 @@ vec3 compute_gradient_aligned(const vec15& y, const odeco_euler_aligned& frame)
     return gradient;
 }
 
-mat3 compute_hessian_aligned(const vec15& y, const odeco_euler_aligned& frame)
+mat3 compute_hessian(const vec15& y, const odeco_euler_aligned& frame)
 {
     vec15 ref_frame = ref_frame_coords_aligned(frame.lambda);
 	static const mat15 L_z = lie_z_15d();
@@ -177,10 +177,10 @@ odeco_mat_aligned odeco_frame_project_aligned_newton(const vec15& y, double tol,
 
 	for (int i = 1; i <= max_iter; i++) {
 		// compute gradient
-        grad = compute_gradient_aligned(target, current_frame);
+        grad = compute_gradient(target, current_frame);
 
 		// compute hessian
-		hess = compute_hessian_aligned(target, current_frame);
+		hess = compute_hessian(target, current_frame);
         
         // compute newton step
         newton_step = compute_newton_step(grad, hess);
