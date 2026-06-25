@@ -220,7 +220,7 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 		}
 		
 		// line search step size
-		t = compute_step_size(target, current_frame, newton_step, -newton_decrement, 1.0, 0.1, 0.5);
+		t = compute_step_size(target, current_frame, newton_step, -newton_decrement, 1.0, 0.1, 0.2);
 		
 		// update frame description
 		current_frame = update_frame(current_frame, newton_step, t);
