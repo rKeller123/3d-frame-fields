@@ -163,7 +163,6 @@ odeco_euler closest_seed(const vec15& y, int max_1d_res)
 	return best;
 }
 
-// TODO: consider non-negativity constraints for lambda
 odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
 {
 	odeco_euler current_frame = closest_seed(y, max_1d_res_seed);

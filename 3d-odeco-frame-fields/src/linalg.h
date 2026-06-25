@@ -84,4 +84,49 @@ Eigen::LLT<mat> llt(const mat& m)
 	return llt_decomp;
 }
 
+template<typename mat>
+mat mod_cholesky(const mat& m)
+{
+	static const double beta_sq = 1e100;
+	static const double delta = 1e-12;
+
+	// derive the vec type from the given mat type
+	using vec = Eigen::Matrix<double, mat::RowsAtCompileTime, 1>;
+
+	mat l = mat::Identity();
+	vec d = vec::Zero();
+	mat c = mat::Zero();
+
+	const int n = m.rows();
+
+	for (int j = 0; j < n; j++) {
+
+		c(j, j) = m(j, j);
+		for (int s = 0; s < j; s++) {
+			c(j, j) -= d(s) * l(j, s) * l(j, s);
+		}
+
+		for (int i = j + 1; i < n; i++) {
+			c(i, j) = m(i, j);
+			for (int s = 0; s < j; s++) {
+				c(i, j) -= d(s) * l(i, s) * l(j, s);
+			}
+		}
+
+		double theta = c.col(j).tail(n - j).cwiseAbs().maxCoeff();
+
+		d(j) = std::max(
+			std::abs(c(j, j)), std::max(
+				(theta * theta) / beta_sq, delta
+			)
+		);
+
+		for (int i = j + 1; i < n; i++) {
+			l(i, j) = c(i, j) / d(j);
+		}
+
+	}
+	return l * d.array().sqrt().matrix().asDiagonal();
+}
+
 double clamped_log(double x);

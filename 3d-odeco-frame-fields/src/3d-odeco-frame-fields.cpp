@@ -4,6 +4,45 @@
 
 using namespace std;
 
+struct bench_summary {
+	int n;
+	double mean;
+	double variance;
+	double min;
+	double max;
+	double sum;
+	double sumsq;
+
+	bench_summary() {
+		n = 0;
+		mean = 0.0;
+		variance = 0.0;
+		min = 0.0;
+		max = 0.0;
+		sum = 0.0;
+		sumsq = 0.0;
+	}
+
+	void add(double x) {
+		n++;
+		sum += x;
+		sumsq += x*x;
+
+		mean = sum / n;
+		variance = (sumsq / n) - (mean * mean);
+
+		min = std::min(x, min);
+		max = std::max(x, max);
+	}
+
+	std::string toString() const {
+		return "mean=" + std::to_string(mean) +
+			   ", std="  + std::to_string(sqrt(variance)) +
+			   ", min="  + std::to_string(min) +
+			   ", max="  + std::to_string(max);
+	}
+};
+
 int parse(const string& input)
 {
 	try {
@@ -23,6 +62,8 @@ void compute_projections(int n)
 
 	auto first_start = chrono::steady_clock::now();
 
+	bench_summary iter{};
+
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			for (int k = 0; k < n; k++) {
@@ -41,6 +82,7 @@ void compute_projections(int n)
 
 				cout << setprecision(4);
 				cout << i << "i " << j << "j " << k << "k | " << time_elapsed.count() << "s | " << num_iter << "it | " << proj_loss << " loss" << endl;
+				iter.add(num_iter);
 			}
 		}
 	}
@@ -50,6 +92,7 @@ void compute_projections(int n)
 	chrono::duration<double> time_elapsed = last_end - first_start;
 
 	cout << time_elapsed.count() << "s total" << endl << endl;
+	cout << iter.toString() << endl;
 }
 
 void benchmark_seed_random(int n, int seed)
@@ -118,6 +161,8 @@ void compute_aligned_projections(int n, const vec3& d)
 {
 	double step = (numbers::pi + 1.08) / (2 * n);
 
+	bench_summary iter{};
+
 	auto first_start = chrono::steady_clock::now();
 
 	for (int i = 0; i < n; i++) {
@@ -138,6 +183,7 @@ void compute_aligned_projections(int n, const vec3& d)
 
 				cout << setprecision(4);
 				cout << i << "i " << j << "j " << k << "k | " << time_elapsed.count() << "s | " << num_iter << "it | " << proj_loss << " loss" << endl;
+				iter.add(num_iter);
 			}
 		}
 	}
@@ -147,6 +193,7 @@ void compute_aligned_projections(int n, const vec3& d)
 	chrono::duration<double> time_elapsed = last_end - first_start;
 
 	cout << time_elapsed.count() << "s total" << endl << endl;
+	cout << iter.toString() << endl;
 }
 
 int main(int argc, char *argv[])
@@ -160,9 +207,9 @@ int main(int argc, char *argv[])
 		n = parse(argv[1]);
 	}
 
-	// compute_projections(n);
+	compute_projections(n);
 	// benchmark_seed_random(n, 42);
-	compute_aligned_projections(n, vec3(0, 1, 0));
+	// compute_aligned_projections(n, vec3(0, 1, 0));
 
 	return 0;
 }
