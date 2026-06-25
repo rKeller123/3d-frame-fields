@@ -5,31 +5,8 @@
 struct odeco_euler;
 struct odeco_euler_aligned;
 
-template<typename vec, typename mat>
-vec compute_newton_step(const vec & grad, const mat & hess)
-{
-    double epsilon = 0.1;
-    double gamma = 10.0;
-    double delta = std::max(abs(0.000015 * hess.trace()), epsilon);
-    double m = delta;
-
-    mat H_mod = hess;
-
-    Eigen::LLT<mat> decomp = llt(H_mod);
-
-    int n_fails = 0;
-
-    while (decomp.info() != Eigen::Success) {
-        H_mod = H_mod + m * mat::Identity();
-        m = gamma * m;
-        decomp = llt(H_mod);
-        n_fails++;
-    }
-
-    //std::cout << "N failed cholesky: " << n_fails << std::endl;
-
-    return decomp.solve(-grad);
-}
+vec6 compute_newton_step(const vec6& grad, const mat6& hess);
+vec3 compute_newton_step(const vec3& grad, const mat3& hess);
 
 template<typename vec>
 double compute_newton_decrement(const vec& gradient, const vec& newton_step)
