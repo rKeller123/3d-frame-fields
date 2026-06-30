@@ -145,7 +145,7 @@ odeco_euler closest_seed(const vec15& y, int max_1d_res)
 	double best_loss = loss(y, best);
 	double current_loss;
 
-	double step = numbers::pi / (2 * max_1d_res);
+	const double step = numbers::pi / (2 * max_1d_res);
 	
 	for (int i = 0; i < max_1d_res; i++) {
 		for (int j = 0; j < max_1d_res; j++) {
@@ -174,24 +174,18 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 	int max_iter = 1024;
 	num_iterations = max_iter;
 
-	vec6 grad;
-	mat6 hess;
-	vec6 newton_step;
-	double newton_decrement;
-	double t;
-
 	for (int i = 1; i <= max_iter; i++) {
 		// compute gradient
-		grad = compute_gradient(target, current_frame);
+		vec6 grad = compute_gradient(target, current_frame);
 
 		// compute hessian
-		hess = compute_hessian(target, current_frame);
+		mat6 hess = compute_hessian(target, current_frame);
 
 		// compute newton step (modify hessian to be pos. def.)
-		newton_step = compute_newton_step(grad, hess);
+		vec6 newton_step = compute_newton_step(grad, hess);
 		
 		// compute newton decrement
-		newton_decrement = compute_newton_decrement(grad, newton_step);
+		double newton_decrement = compute_newton_decrement(grad, newton_step);
 		
 		// stop if dec < tol
 		if (newton_decrement / 2 <= tol) {
@@ -220,7 +214,7 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 		}
 		
 		// line search step size
-		t = compute_step_size(target, current_frame, newton_step, -newton_decrement, 1.0, 0.1, 0.2);
+		double t = compute_step_size(target, current_frame, newton_step, -newton_decrement, 1.0, 0.1, 0.2);
 		
 		// update frame description
 		current_frame = update_frame(current_frame, newton_step, t);
@@ -230,7 +224,7 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 		target = block_prod_vec(rotation.transpose(), y);
 		current_frame = odeco_euler(current_frame.lambda);
 	}
-	odeco_mat proj = odeco_mat(current_frame.lambda);
+	auto proj = odeco_mat(current_frame.lambda);
 	proj.rot = rotation;
 	return proj;
 }
