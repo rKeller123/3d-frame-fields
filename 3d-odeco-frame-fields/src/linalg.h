@@ -24,18 +24,22 @@ typedef Eigen::Matrix<double, 15, 3> mat15x3;
 typedef Eigen::Matrix<double, 3, 15> mat3x15;
 
 // rotations
-
-mat5 rotation_z_5d(double gamma);
-mat5 rotation_y_5d(double beta);
-mat5 rotation_x_5d(double alpha);
-
-mat9 rotation_z_9d(double gamma);
-mat9 rotation_y_9d(double beta);
-mat9 rotation_x_9d(double alpha);
+mat3 rotation_x_3d(double alpha);
+mat3 rotation_y_3d(double beta);
+mat3 rotation_z_3d(double gamma);
+mat3 rotation_3d(double alpha, double beta, double gamma);
+mat3 rotation_3d(const vec3& theta);
 
 mat15 rotation_z_15d(double theta);
+mat15 rotation_y_15d(double theta);
+mat15 rotation_x_15d(double theta);
 mat15 rotation_15d(double alpha, double beta, double gamma);
 mat15 rotation_15d(const vec3& theta);
+
+vec15 rotate_x(const vec15& v, const double angle);
+vec15 rotate_y(const vec15& v, const double angle);
+vec15 rotate_z(const vec15& v, const double angle);
+vec15 rotate(const vec15& v, const vec3& theta);
 
 mat3 rotate_rodrigues(const vec3& axis, double theta);
 mat15 rotation_from_axis_angle(const vec3 & axis, double theta);

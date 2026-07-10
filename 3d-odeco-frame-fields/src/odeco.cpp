@@ -1,6 +1,8 @@
 
 #include "odeco.h"
 
+#include "quaternion.h"
+
 using namespace std;
 
 static const double C = 1e-5;
@@ -44,9 +46,8 @@ vec15 ref_frame_coords(const vec3& lambda)
 
 vec15 odeco_frame_coords(const odeco_euler& frame)
 {
-	mat15 rotation = rotation_15d(frame.theta);
 	vec15 ref_frame = ref_frame_coords(frame.lambda);
-	return block_prod_vec(rotation, ref_frame);
+	return rotate(ref_frame, frame.theta);
 }
 
 vec15 odeco_frame_coords(const odeco_mat& frame)
@@ -68,70 +69,34 @@ double loss(const vec15& y, const odeco_mat& frame)
 
 vec6 compute_gradient(const vec15& y, const odeco_euler& frame)
 {
-	vec15 ref_frame = ref_frame_coords(frame.lambda);
-	static const mat15 L_x = lie_x_15d();
-	static const mat15 L_y = lie_y_15d();
-	static const mat15 L_z = lie_z_15d();
-
-	vec6 gradient = vec6::Zero();
-
-	gradient(0) = -2 * y.transpose() * L_x * ref_frame;
-	gradient(1) = -2 * y.transpose() * L_y * ref_frame;
-	gradient(2) = -2 * y.transpose() * L_z * ref_frame;
-	
-	gradient.block<3, 1>(3, 0) = 2 * F.transpose() * ref_frame - 2 * F.transpose() * y;
-
-	gradient(3) -= C / frame.lambda.x();
-	gradient(4) -= C / frame.lambda.y();
-	gradient(5) -= C / frame.lambda.z();
-
-	return gradient;
+	const double l_x = frame.lambda.x();
+	const double l_y = frame.lambda.y();
+	const double l_z = frame.lambda.z();
+	return vec6{
+		1.1102230246251565e-16*l_x*y[7] + l_y*(-3.1381413698186362*y[2] + 1.1298600273745016*y[7] + 1.2811408494623837*y[9]) + l_z*(3.1381413698186362*y[2] + 1.7081877992831784*y[9]),
+		l_x*(-1.2811408494623837*y[11] + 1.1298600273745016*y[13] + 3.1381413698186362*y[4]) + 1.1102230246251565e-16*l_y*y[13] - l_z*(1.7081877992831784*y[11] + 3.1381413698186362*y[4]),
+		-l_x*(3.1381413698186362*y[1] + 1.5978633742962567*y[6] - 0.60393558820663018*y[8]) - l_y*(-3.1381413698186362*y[1] + 1.5978633742962567*y[6] + 0.60393558820663018*y[8]),
+		-C/l_x + 2.7925268031909272*l_x + 0.23935944027350806*l_y + 0.23935944027350806*l_z - 1.4179630807244128*y[0] - 0.20256615438920181*y[10] + 0.30196779410331509*y[12] - 0.39946584357406417*y[14] + 0.90590338230994527*y[3] - 1.5690706849093181*y[5],
+		-C/l_y + 0.23935944027350806*l_x + 2.7925268031909272*l_y + 0.23935944027350806*l_z - 1.4179630807244128*y[0] - 0.20256615438920181*y[10] - 0.30196779410331509*y[12] - 0.39946584357406417*y[14] + 0.90590338230994527*y[3] + 1.5690706849093181*y[5],
+		-C/l_z + 0.23935944027350806*l_x + 0.23935944027350806*l_y + 2.7925268031909272*l_z - 1.4179630807244128*y[0] - 0.54017641170453823*y[10] - 1.8118067646198905*y[3]
+	};
 }
 
 mat6 compute_hessian(const vec15& y, const odeco_euler& frame)
 {
-	vec15 ref_frame = ref_frame_coords(frame.lambda);
-	static const mat15 L_x = lie_x_15d();
-	static const mat15 L_y = lie_y_15d();
-	static const mat15 L_z = lie_z_15d();
-	static const mat15 Lxx = L_x * L_x;
-	static const mat15 Lxy = L_x * L_y;
-	static const mat15 Lxz = L_x * L_z;
-	static const mat15 Lyy = L_y * L_y;
-	static const mat15 Lyz = L_y * L_z;
-	static const mat15 Lzz = L_z * L_z;
+	const double l_x = frame.lambda.x();
+	const double l_y = frame.lambda.y();
+	const double l_z = frame.lambda.z();
 
-	mat6 H = mat6::Zero();
-
-	const double H_1_12 = -2 * y.transpose() * Lxy * ref_frame;
-	const double H_1_13 = -2 * y.transpose() * Lxz * ref_frame;
-	const double H_1_23 = -2 * y.transpose() * Lyz * ref_frame;
-
-	mat3 H_1{
-		{ -2 * y.transpose() * Lxx * ref_frame, H_1_12,  H_1_13},
-		{ H_1_12, -2 * y.transpose() * Lyy * ref_frame,  H_1_23},
-		{ H_1_13, H_1_23, -2 * y.transpose() * Lzz * ref_frame },
+	return mat6{
+	    {2.0*l_x*(2.2204460492503131e-16*y[12] + 5.5511151231257827e-17*y[14]) + 2.0*l_y*(2.0256615438920185*y[10] + 2.4157423528265207*y[12] + 0.79893168714812823*y[14] - 2.7177101469298357*y[3] - 1.5690706849093181*y[5]) + 2.0*l_z*(2.7008820585226916*y[10] + 1.8118067646198912*y[12] + 2.7177101469298357*y[3] + 1.5690706849093181*y[5]),-2.0*l_x*(1.5690706849093181*y[1] + 0.79893168714812823*y[6] - 0.3019677941033152*y[8]) - 1.1102230246251565e-16*l_y*(y[6] - y[8]) + 2.0*l_z*(1.5690706849093181*y[1] + 1.8118067646198905*y[8]),-2.0*l_x*(-0.64057042473119186*y[11] + 0.56493001368725093*y[13] + 1.5690706849093181*y[4]) - 2.0*l_y*(0.64057042473119186*y[11] + 1.6947900410617525*y[13] - 1.5690706849093181*y[4]),0,-3.1381413698186362*y[2] + 1.1298600273745016*y[7] + 1.2811408494623837*y[9],3.1381413698186362*y[2] + 1.7081877992831784*y[9]},
+	    {1.1102230246251565e-16*l_x*y[6] + 2.0*l_y*(-1.5690706849093181*y[1] + 0.79893168714812823*y[6] + 0.30196779410331515*y[8]) + 2.0*l_z*(1.5690706849093181*y[1] + 1.8118067646198905*y[8]),2.0*l_x*(2.0256615438920185*y[10] - 2.4157423528265207*y[12] + 0.79893168714812823*y[14] - 2.7177101469298357*y[3] + 1.5690706849093181*y[5]) - 2.0*l_y*(2.2204460492503131e-16*y[12] - 5.5511151231257827e-17*y[14]) + 2.0*l_z*(2.7008820585226916*y[10] - 1.8118067646198912*y[12] + 2.7177101469298357*y[3] - 1.5690706849093181*y[5]),2.0*l_x*(1.5690706849093181*y[2] + 1.6947900410617525*y[7] - 0.64057042473119186*y[9]) + 2.0*l_y*(-1.5690706849093181*y[2] + 0.56493001368725093*y[7] + 0.64057042473119186*y[9]),-1.2811408494623837*y[11] + 1.1298600273745016*y[13] + 3.1381413698186362*y[4],0,-1.7081877992831784*y[11] - 3.1381413698186362*y[4]},
+	    {-2.0*l_y*(0.64057042473119186*y[11] + 1.6947900410617522*y[13] - 1.5690706849093181*y[4]) - 2.0*l_z*(0.85409389964158922*y[11] + 1.5690706849093181*y[4]),2.0*l_x*(1.5690706849093181*y[2] + 1.6947900410617522*y[7] - 0.64057042473119186*y[9]) - 2.0*l_z*(1.5690706849093181*y[2] + 0.85409389964158922*y[9]),2.0*l_x*(-0.60393558820663018*y[12] + 3.1957267485925134*y[14] + 3.1381413698186362*y[5]) + 2.0*l_y*(0.60393558820663018*y[12] + 3.1957267485925134*y[14] - 3.1381413698186362*y[5]),-3.1381413698186362*y[1] - 1.5978633742962567*y[6] + 0.60393558820663018*y[8],3.1381413698186362*y[1] - 1.5978633742962567*y[6] - 0.60393558820663018*y[8],0},
+	    {0,-1.2811408494623837*y[11] + 1.1298600273745016*y[13] + 3.1381413698186362*y[4],-3.1381413698186362*y[1] - 1.5978633742962567*y[6] + 0.60393558820663018*y[8],C/pow(l_x, 2) + 2.7925268031909272,0.23935944027350806,0.23935944027350806},
+	    {-3.1381413698186362*y[2] + 1.1298600273745016*y[7] + 1.2811408494623837*y[9],0,3.1381413698186362*y[1] - 1.5978633742962567*y[6] - 0.60393558820663018*y[8],0.23935944027350806,C/pow(l_y, 2) + 2.7925268031909272,0.23935944027350806},
+	    {3.1381413698186362*y[2] + 1.7081877992831784*y[9],-1.7081877992831784*y[11] - 3.1381413698186362*y[4],0,0.23935944027350806,0.23935944027350806,C/pow(l_z, 2) + 2.7925268031909272}
 	};
 
-	mat3 H_2 = mat3::Zero();
-	H_2.block<1, 3>(0, 0) = (-2 * F.transpose() * L_x.transpose() * y).transpose();
-	H_2.block<1, 3>(1, 0) = (-2 * F.transpose() * L_y.transpose() * y).transpose();
-	H_2.block<1, 3>(2, 0) = (-2 * F.transpose() * L_z.transpose() * y).transpose();
-
-	mat3 H_3 = H_2.transpose();
-
-	static const mat3 H_4 = 2 * F.transpose() * F;
-
-	H.block<3, 3>(0, 0) = H_1;
-	H.block<3, 3>(0, 3) = H_2;
-	H.block<3, 3>(3, 0) = H_3;
-	H.block<3, 3>(3, 3) = H_4;
-
-	H(3, 3) += C / (frame.lambda.x() * frame.lambda.x());
-	H(4, 4) += C / (frame.lambda.y() * frame.lambda.y());
-	H(5, 5) += C / (frame.lambda.z() * frame.lambda.z());
-
-	return H;
 }
 
 odeco_euler closest_seed(const vec15& y, int max_1d_res)
@@ -143,7 +108,6 @@ odeco_euler closest_seed(const vec15& y, int max_1d_res)
 	odeco_euler current = best;
 
 	double best_loss = loss(y, best);
-	double current_loss;
 
 	const double step = numbers::pi / (2 * max_1d_res);
 	
@@ -151,7 +115,7 @@ odeco_euler closest_seed(const vec15& y, int max_1d_res)
 		for (int j = 0; j < max_1d_res; j++) {
 			for (int k = 0; k < max_1d_res; k++) {
 				current = odeco_euler(step * vec3(i, j, k), current.lambda);
-				current_loss = loss(y, current);
+				double current_loss = loss(y, current);
 				if (current_loss < best_loss) {
 					best_loss = current_loss;
 					best = current;
@@ -167,9 +131,11 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 {
 	odeco_euler current_frame = closest_seed(y, max_1d_res_seed);
 
-	mat15 rotation = rotation_15d(current_frame.theta);
+	// rotation accumulator
+	quaternion q = quaternion::from_euler(current_frame.theta);
 
-	vec15 target = rotation.transpose() * y;
+	vec15 target = rotate(y, -current_frame.theta);
+	current_frame.theta = vec3::Zero();
 
 	int max_iter = 1024;
 	num_iterations = max_iter;
@@ -220,12 +186,12 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 		current_frame = update_frame(current_frame, newton_step, t);
 
 		// avoid gimbal locks: absorb rotation into target, keep current_frame.theta = 0
-		rotation = block_prod_mat(rotation, rotation_15d(current_frame.theta));
-		target = block_prod_vec(rotation.transpose(), y);
+		q = q * quaternion::from_euler(current_frame.theta);
+		target = rotate(y, q.conjugate().to_euler());
 		current_frame = odeco_euler(current_frame.lambda);
 	}
 	auto proj = odeco_mat(current_frame.lambda);
-	proj.rot = rotation;
+	proj.rot = rotation_15d(q.to_euler());
 	return proj;
 }
 

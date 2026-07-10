@@ -2,6 +2,8 @@
 
 #include "3d-odeco-frame-fields.h"
 
+#include "quaternion.h"
+
 using namespace std;
 
 struct bench_summary {
