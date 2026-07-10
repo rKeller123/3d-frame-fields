@@ -15,6 +15,7 @@ import plotly.graph_objects as go
 from dash import Dash, html, dcc, callback, Output, Input, exceptions, ALL
 
 from odeco import generate_sh_values_from_coordinates, generate_coordinates
+from rotations import rotate_3
 
 def run_cli(mode: int, values: np.ndarray, d: np.ndarray):
     values = np.asarray(values).flatten()
@@ -161,7 +162,15 @@ for slider_id in ["l_x", "l_y", "l_z", "alpha", "beta", "gamma"]:
 )
 def compute_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
     coordinates = generate_coordinates(l_x, l_y, l_z, alpha, beta, gamma)
-    return coordinates.tolist()
+    v0 = np.array([1.1 * l_x, 0, 0])
+    v1 = np.array([0, 1.1* l_y, 0])
+    v2 = np.array([0, 0, 1.1 * l_z])
+
+    v0 = rotate_3(v0, alpha, beta, gamma)
+    v1 = rotate_3(v1, alpha, beta, gamma)
+    v2 = rotate_3(v2, alpha, beta, gamma)
+
+    return {'coords': coordinates.tolist(), 'basis': [v0, v1, v2]}
 
 @callback(
     Output({"type": "override-coord", "index": ALL}, "value"),
@@ -170,7 +179,7 @@ def compute_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
 def sync_override_boxes(coords):
     if coords is None:
         raise exceptions.PreventUpdate
-    return coords
+    return coords['coords']
 
 @callback(
     Output("input-plot", "figure"),
@@ -182,7 +191,8 @@ def update_input_plot(coords, overrides):
     if coords is None:
         raise exceptions.PreventUpdate
 
-    final = np.array(coords)
+    final = np.array(coords['coords'])
+    basis = np.array(coords['basis'])  # shape should be (3, 3)
 
     if overrides and any(v is not None for v in overrides):
         for i, v in enumerate(overrides):
@@ -191,7 +201,54 @@ def update_input_plot(coords, overrides):
 
     sh_values, x, y, z = generate_sh_values_from_coordinates(final)
 
-    fig = go.Figure(data=[go.Surface(x=x, y=y, z=z, surfacecolor=sh_values)])
+    fig = go.Figure()
+
+    # Surface plot
+    fig.add_trace(
+        go.Surface(
+            x=x,
+            y=y,
+            z=z,
+            surfacecolor=sh_values,
+            opacity=1
+        )
+    )
+
+    # Draw basis vectors
+    colors = ["red", "green", "blue"]
+    labels = ["v0", "v1", "v2"]
+
+    origin = np.zeros(3)
+
+    for i, vec in enumerate(basis):
+        fig.add_trace(
+            go.Scatter3d(
+                x=[origin[0], vec[0]],
+                y=[origin[1], vec[1]],
+                z=[origin[2], vec[2]],
+                mode="lines+markers",
+                line=dict(
+                    width=6,
+                    color=colors[i]
+                ),
+                marker=dict(
+                    size=4,
+                    color=colors[i]
+                ),
+                name=labels[i]
+            )
+        )
+
+    # Optional: make axes equal scale
+    fig.update_layout(
+        scene=dict(
+            aspectmode="data",
+            xaxis_title="X",
+            yaxis_title="Y",
+            zaxis_title="Z"
+        )
+    )
+
     return fig
 
 @callback(
@@ -210,7 +267,7 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
     if coords is None or z_aligned is None:
         raise exceptions.PreventUpdate
 
-    final = np.array(coords)
+    final = np.array(coords['coords'])
     mode = int('z_proj' in z_aligned)
     d = np.array([d_x, d_y, d_z])
 
