@@ -99,13 +99,13 @@ int main(int argc, char *argv[])
 	switch (mode) {
 	case 0:
 	{
-		odeco_mat proj = odeco_frame_project(target, 0, 1e-9, num_iter);
+		odeco_quat proj = odeco_frame_project(target, 0, 1e-9, num_iter);
 		cout << stringify(num_iter, odeco_frame_coords(proj)) << endl;
 		break;
 	}
 	case 1:
 	{
-		odeco_mat_aligned proj_aligned = odeco_frame_project_aligned(target, direction, 1e-9, num_iter);
+		odeco_quat_aligned proj_aligned = odeco_frame_project_aligned(target, direction, 1e-9, num_iter);
 		cout << stringify(num_iter, odeco_frame_coords(proj_aligned)) << endl;
 		break;
 	}

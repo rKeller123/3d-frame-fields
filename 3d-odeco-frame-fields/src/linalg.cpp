@@ -411,3 +411,11 @@ double clamped_log(double x)
     }
     return log(x);
 }
+
+vec3 perpendicular(const vec3 &v) {
+    const auto sign = std::copysign(1.0, v.z());
+    const auto a = -1.0 / (sign + v.z());
+    const auto b = v.x() * v.y() * a;
+
+    return {1.0 + sign * v.x() * v.x() * a, sign * b, -sign * v.x()};
+}

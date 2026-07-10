@@ -69,13 +69,13 @@ void compute_projections(int n)
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			for (int k = 0; k < n; k++) {
-				odeco_mat target_frame(step * vec3(i, j, k), vec3(2.5, 7, 0.5));
+				odeco_euler target_frame(step * vec3(i, j, k), vec3(2.5, 7, 0.5));
 
 				vec15 target_coords = odeco_frame_coords(target_frame);
 
 				int num_iter;
 				auto start = chrono::steady_clock::now();
-				odeco_mat projected_frame = odeco_frame_project(target_coords, 0, 1e-9, num_iter);
+				odeco_quat projected_frame = odeco_frame_project(target_coords, 0, 1e-9, num_iter);
 				auto end = chrono::steady_clock::now();
 
 				chrono::duration<double> time_elapsed = end - start;
@@ -121,7 +121,7 @@ void benchmark_seed_random(int n, int seed)
 
 				int num_iter_ref;
 				auto start = chrono::steady_clock::now();
-				odeco_mat projected_frame_ref = odeco_frame_project(target, 0, 1e-9, num_iter_ref);
+				odeco_quat projected_frame_ref = odeco_frame_project(target, 0, 1e-9, num_iter_ref);
 				auto end = chrono::steady_clock::now();
 
 				chrono::duration<double> time_elapsed_ref = end - start;
@@ -130,7 +130,7 @@ void benchmark_seed_random(int n, int seed)
 
 				int num_iter_seed;
 				start = chrono::steady_clock::now();
-				odeco_mat projected_frame_seed = odeco_frame_project(target, 5, 1e-9, num_iter_seed);
+				odeco_quat projected_frame_seed = odeco_frame_project(target, 5, 1e-9, num_iter_seed);
 				end = chrono::steady_clock::now();
 
 				chrono::duration<double> time_elapsed_seed = end - start;
@@ -170,13 +170,13 @@ void compute_aligned_projections(int n, const vec3& d)
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			for (int k = 0; k < n; k++) {
-				odeco_mat target_frame(step * vec3(i, j, k), vec3(2.5, 7, 0.5));
+				odeco_euler target_frame(step * vec3(i, j, k), vec3(2.5, 7, 0.5));
 
 				vec15 target_coords = odeco_frame_coords(target_frame);
 
 				auto start = chrono::steady_clock::now();
 				int num_iter;
-				odeco_mat_aligned projected_frame = odeco_frame_project_aligned(target_coords, d, 1e-9, num_iter);
+				odeco_quat_aligned projected_frame = odeco_frame_project_aligned(target_coords, d, 1e-9, num_iter);
 				auto end = chrono::steady_clock::now();
 
 				chrono::duration<double> time_elapsed = end - start;

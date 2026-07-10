@@ -4,6 +4,7 @@
 #include "newton.h"
 #include <numbers>
 #include <iostream>
+#include "quaternion.h"
 
 using namespace std;
 
@@ -34,12 +35,12 @@ struct odeco_euler {
 	odeco_euler(const vec3& lambda);
 };
 
-struct odeco_mat {
-	mat15 rot;
+struct odeco_quat {
+	quaternion rot;
 	vec3 lambda;
 
-	odeco_mat(const vec3& theta, const vec3& lambda);
-	odeco_mat(const vec3& lambda);
+	odeco_quat(const quaternion& rot, const vec3& lambda);
+	odeco_quat(const vec3& lambda);
 };
 
 odeco_euler operator+(const odeco_euler& f0, const odeco_euler& f1);
@@ -47,10 +48,10 @@ odeco_euler operator*(double t, const odeco_euler& f);
 
 vec15 ref_frame_coords(const vec3& lambda);
 vec15 odeco_frame_coords(const odeco_euler& frame);
-vec15 odeco_frame_coords(const odeco_mat& frame);
+vec15 odeco_frame_coords(const odeco_quat& frame);
 
 double loss(const vec15& y, const odeco_euler& frame);
-double loss(const vec15& y, const odeco_mat& frame);
+double loss(const vec15& y, const odeco_quat& frame);
 
 vec6 compute_gradient(const vec15& y, const odeco_euler& frame);
 
@@ -58,4 +59,4 @@ mat6 compute_hessian(const vec15& y, const odeco_euler& frame);
 
 odeco_euler closest_seed(const vec15& y, int max_1d_res);
 
-odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations);
+odeco_quat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations);

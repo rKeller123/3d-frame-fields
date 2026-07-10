@@ -134,3 +134,4 @@ mat mod_cholesky(const mat& m)
 }
 
 double clamped_log(double x);
+vec3 perpendicular(const vec3& v);

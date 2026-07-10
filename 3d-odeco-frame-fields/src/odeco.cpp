@@ -50,9 +50,9 @@ vec15 odeco_frame_coords(const odeco_euler& frame)
 	return rotate(ref_frame, frame.theta);
 }
 
-vec15 odeco_frame_coords(const odeco_mat& frame)
+vec15 odeco_frame_coords(const odeco_quat& frame)
 {
-	return block_prod_vec(frame.rot, ref_frame_coords(frame.lambda));
+	return rotate(ref_frame_coords(frame.lambda), frame.rot.to_euler());
 }
 
 double loss(const vec15& y, const odeco_euler& frame)
@@ -61,7 +61,7 @@ double loss(const vec15& y, const odeco_euler& frame)
 	return (f - y).squaredNorm() - C * (clamped_log(frame.lambda.x()) + clamped_log(frame.lambda.y()) + clamped_log(frame.lambda.z()));
 }
 
-double loss(const vec15& y, const odeco_mat& frame)
+double loss(const vec15& y, const odeco_quat& frame)
 {
 	vec15 f = odeco_frame_coords(frame);
 	return (f - y).squaredNorm() - C * (clamped_log(frame.lambda.x()) + clamped_log(frame.lambda.y()) + clamped_log(frame.lambda.z()));
@@ -127,7 +127,7 @@ odeco_euler closest_seed(const vec15& y, int max_1d_res)
 	return best;
 }
 
-odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
+odeco_quat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, int& num_iterations)
 {
 	odeco_euler current_frame = closest_seed(y, max_1d_res_seed);
 
@@ -190,9 +190,7 @@ odeco_mat odeco_frame_project(const vec15& y, int max_1d_res_seed, double tol, i
 		target = rotate(y, q.conjugate().to_euler());
 		current_frame = odeco_euler(current_frame.lambda);
 	}
-	auto proj = odeco_mat(current_frame.lambda);
-	proj.rot = rotation_15d(q.to_euler());
-	return proj;
+	return odeco_quat(q, current_frame.lambda);
 }
 
 odeco_euler::odeco_euler(const vec3& theta, const vec3& lambda)
@@ -205,12 +203,10 @@ odeco_euler::odeco_euler(const vec3& lambda) : odeco_euler(vec3(0, 0, 0), lambda
 {
 }
 
-odeco_mat::odeco_mat(const vec3& theta, const vec3& lambda)
+odeco_quat::odeco_quat(const quaternion& rot, const vec3& lambda) : rot(rot), lambda(lambda)
 {
-	this->rot = rotation_15d(theta);
-	this->lambda = lambda;
 }
 
-odeco_mat::odeco_mat(const vec3& lambda) : odeco_mat(vec3::Zero(), lambda)
+odeco_quat::odeco_quat(const vec3& lambda) : odeco_quat(quaternion::identity(), lambda)
 {
 }

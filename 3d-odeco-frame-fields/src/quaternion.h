@@ -12,6 +12,13 @@ public:
         this->im_ = im;
     }
 
+    static quaternion identity() {
+        return {
+            1.0,
+            vec3::Zero()
+        };
+    }
+
     static quaternion from_angle_axis(const double angle, const vec3& axis) {
         const double half_angle = angle / 2.0;
         return {
@@ -43,10 +50,13 @@ public:
 
     static quaternion dir_to_z(const vec3& dir) {
         const vec3 unit_dir = dir.normalized();
+        if (unit_dir.z() < -1.0 + 1e-10) {
+            return {0.0, perpendicular(unit_dir)};
+        }
 
         const vec3 axis = {unit_dir.y(), -unit_dir.x(), 0.0};
         const double s = std::sqrt(2.0 * (1.0 + unit_dir.z()));
-        return {s / 2.0, axis / 2.0};
+        return {s / 2.0, axis / s};
 
     }
 
