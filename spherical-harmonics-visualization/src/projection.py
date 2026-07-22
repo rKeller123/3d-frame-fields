@@ -6,7 +6,8 @@ import math
 from time import time
 
 PLATFORM = platform.system()
-executable_path = os.path.abspath("./3d-odeco-frame-fields/build/cli")
+executable_path = os.path.abspath("../snail_field_cxx/build/examples/cli")
+# executable_path = os.path.abspath("./3d-odeco-frame-fields/build/cli")
 if (PLATFORM == "Windows"):
     executable_path = os.path.abspath("./3d-odeco-frame-fields/out/build/x64-debug/cli.exe")
 
@@ -37,6 +38,7 @@ def run_cli(mode: int, values: np.ndarray, d: np.ndarray):
         capture_output=True,
         text=True
     )
+    print(result)
 
     if result.returncode != 0:
         raise RuntimeError(result.stderr)

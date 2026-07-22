@@ -60,7 +60,8 @@ int parse(const string& input)
 
 void compute_projections(int n)
 {
-	double step = (numbers::pi + 1.08) / (2 * n);
+	int not_exact = 0;
+	double step = numbers::pi / (2 * n);
 
 	auto first_start = chrono::steady_clock::now();
 
@@ -69,7 +70,7 @@ void compute_projections(int n)
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			for (int k = 0; k < n; k++) {
-				odeco_euler target_frame(step * vec3(i, j, k), vec3(2.5, 7, 0.5));
+				odeco_euler target_frame(step * vec3(i, j, k), vec3(2, 3, 8));
 
 				vec15 target_coords = odeco_frame_coords(target_frame);
 
@@ -85,9 +86,15 @@ void compute_projections(int n)
 				cout << setprecision(4);
 				cout << i << "i " << j << "j " << k << "k | " << time_elapsed.count() << "s | " << num_iter << "it | " << proj_loss << " loss" << endl;
 				iter.add(num_iter);
+
+				if (proj_loss > 1e-3) {
+					not_exact++;
+				}
+
 			}
 		}
 	}
+	cout << not_exact << " not exact projections" << endl;
 
 	auto last_end = chrono::steady_clock::now();
 
@@ -161,7 +168,7 @@ void benchmark_seed_random(int n, int seed)
 
 void compute_aligned_projections(int n, const vec3& d)
 {
-	double step = (numbers::pi + 1.08) / (2 * n);
+	double step = numbers::pi / (2 * n);
 
 	bench_summary iter{};
 
@@ -170,7 +177,7 @@ void compute_aligned_projections(int n, const vec3& d)
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			for (int k = 0; k < n; k++) {
-				odeco_euler target_frame(step * vec3(i, j, k), vec3(2.5, 7, 0.5));
+				odeco_euler target_frame(step * vec3(i, j, k), vec3(2, 3, 8));
 
 				vec15 target_coords = odeco_frame_coords(target_frame);
 
@@ -209,9 +216,9 @@ int main(int argc, char *argv[])
 		n = parse(argv[1]);
 	}
 
-	compute_projections(n);
+	// compute_projections(n);
 	// benchmark_seed_random(n, 42);
-	// compute_aligned_projections(n, vec3(0, 1, 0));
+	compute_aligned_projections(n, vec3(1, 1, 1));
 
 	return 0;
 }

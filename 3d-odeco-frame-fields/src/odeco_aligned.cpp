@@ -128,10 +128,9 @@ odeco_quat_aligned odeco_frame_project_aligned_newton(const vec15& y, double tol
 {
 	odeco_euler_aligned current_frame = odeco_euler_aligned(0, vec2(1, 1));
 
-	mat15 rot = rotation_z_15d(current_frame.theta);
-	auto q = quaternion::rotate_z(current_frame.theta);
+	auto q = quaternion::identity();
 
-	auto target = rotate(y, q.conjugate().to_euler());
+	auto target = y;
 
 	int max_iter = 1024;
 	num_iterations = max_iter;
