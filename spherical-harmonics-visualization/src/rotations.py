@@ -177,13 +177,18 @@ def rotate_z(theta):
 
 
 def rotate_octahedral(a_0, alpha, beta, gamma):
-    return rotate_x_9d(alpha) @ rotate_y_9d(beta) @ rotate_z_9d(gamma) @ a_0
+    assert a_0.size == 9, "octa coordinates should have size 9"
+    Rx = rotate_x(alpha)[-9:, -9:]
+    Ry = rotate_y(beta)[-9:, -9:]
+    Rz = rotate_z(gamma)[-9:, -9:]
+    return Rx @ Ry @ Rz @ a_0
 
 lie_rotate_x_15d = lambda alpha: expm(alpha * block_diag(0, L_x_5d, L_x_9d))
 lie_rotate_y_15d = lambda beta: expm(beta * block_diag(0, L_y_5d, L_y_9d))
 lie_rotate_z_15d = lambda gamma: expm(gamma * block_diag(0, L_z_5d, L_z_9d))
 
 def rotate_odeco(a_0, alpha, beta, gamma):
+    assert a_0.size == 15, "odeco coordinates should have size 15"
     R = rotate_x(alpha) @ rotate_y(beta) @ rotate_z(gamma)
     Rl = lie_rotate_x_15d(alpha) @ lie_rotate_y_15d(beta) @ lie_rotate_z_15d(gamma)
 

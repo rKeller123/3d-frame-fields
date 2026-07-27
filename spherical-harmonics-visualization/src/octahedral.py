@@ -14,7 +14,7 @@ from rotations import rotate_octahedral
 def canonical_octahedral():
     return np.array([0, 0, 0, 0, math.sqrt(7 / 12), 0, 0, 0, math.sqrt(5 / 12)])
 
-def generate_sh_values(alpha, beta, gamma):
+def generate_sh_values_from_coordinates_octa(coordinates):
     n = 100
 
     # Create grid
@@ -27,17 +27,11 @@ def generate_sh_values(alpha, beta, gamma):
     theta_flat = theta_grid.flatten()
     phi_flat = phi_grid.flatten()
 
-    # reference frame
-    a_0 = canonical_octahedral()
-
-    # rotation in euler angles
-    a = rotate_octahedral(a_0, alpha, beta, gamma)
-
-    l = (len(a) - 1) // 2
+    l = 4
 
     # Compute results (vectorized instead of loop)
     sh_values = np.array([
-        sum(a[j + l] * sph_harm_real(l, j, theta_flat[i], phi_flat[i])
+        sum(coordinates[j + l] * sph_harm_real(l, j, theta_flat[i], phi_flat[i])
             for j in range(-l, l + 1))
         for i in range(theta_flat.size)
     ])
@@ -46,7 +40,7 @@ def generate_sh_values(alpha, beta, gamma):
     sh_values = sh_values.reshape((n, n))
 
     # Compute cartesian coordinates
-    offset = 0.5
+    offset = 0.8
     r = offset + sh_values
 
     x = r * np.sin(theta_grid) * np.cos(phi_grid)
@@ -55,58 +49,7 @@ def generate_sh_values(alpha, beta, gamma):
 
     return sh_values, x, y, z
 
-# Plot
-octahedral = Dash()
-
-octahedral.layout = html.Div([
-    html.H1("Octahedral Frame in SH representation"),
-
-    html.Div([
-        html.Div([
-            html.Label("Alpha", style={"fontWeight": "bold"}),
-            dcc.Slider(id="alpha", min=0, max=0.5*math.pi, step=0.01, value=0,
-                       marks={0: '0', math.pi/4: 'π/4', math.pi/2: 'π/2'}),
-        ], style={"flex": 1}),
-
-        html.Div([
-            html.Label("Beta", style={"fontWeight": "bold"}),
-            dcc.Slider(id="beta", min=0, max=0.5*math.pi, step=0.01, value=0,
-                       marks={0: '0', math.pi/4: 'π/4', math.pi/2: 'π/2'}),
-        ], style={"flex": 1}),
-
-        html.Div([
-            html.Label("Gamma", style={"fontWeight": "bold"}),
-            dcc.Slider(id="gamma", min=0, max=0.5*math.pi, step=0.01, value=0,
-                       marks={0: '0', math.pi/4: 'π/4', math.pi/2: 'π/2'}),
-        ], style={"flex": 1}),
-
-    ], style={"display": "flex", "gap": "40px", "padding": "16px 24px"}),
-
-    dcc.Graph(id="3d-surface-plot", style={"height": "80vh"})
-])
-
-@callback(
-    Output("3d-surface-plot", "figure"),
-    Input("alpha", "value"),
-    Input("beta",  "value"),
-    Input("gamma", "value")
-)
-def update_graph(alpha, beta, gamma):
-    sh_values, x, y, z = generate_sh_values(alpha, beta, gamma)
-
-    figure = go.Figure(
-        data=[go.Surface(x=x, y=y, z=z, surfacecolor=sh_values)]
-    )
-
-    figure.update_layout(
-        uirevision="fixed",
-        scene_camera=dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=1.25, y=1.25, z=1.25)
-        )
-    )
-
-    return figure
-
-octahedral.run(debug=True)
+def generate_octa_coordinates(alpha, beta, gamma):
+    a_0 = canonical_octahedral()
+    a = rotate_octahedral(a_0, alpha, beta, gamma)
+    return a

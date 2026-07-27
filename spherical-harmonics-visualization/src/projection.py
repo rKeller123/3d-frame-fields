@@ -4,10 +4,12 @@ import os
 import platform
 import math
 from time import time
+from octahedral import generate_sh_values_from_coordinates_octa, generate_octa_coordinates
 
 PLATFORM = platform.system()
 executable_path = os.path.abspath("../snail_field_cxx/build/examples/cli")
 # executable_path = os.path.abspath("./3d-odeco-frame-fields/build/cli")
+executable_path_octa = os.path.abspath("../snail_field_cxx_main/build/examples/cli")
 if (PLATFORM == "Windows"):
     executable_path = os.path.abspath("./3d-odeco-frame-fields/out/build/x64-debug/cli.exe")
 
@@ -38,12 +40,52 @@ def run_cli(mode: int, values: np.ndarray, d: np.ndarray):
         capture_output=True,
         text=True
     )
-    print(result)
+
+    if mode == 1:
+        print("===== odeco =====")
+        print("in:", result.args)
+        print("out:", result.stdout)
+        print("===== odeco =====")
 
     if result.returncode != 0:
         raise RuntimeError(result.stderr)
 
-    out = result.stdout.strip().split(";")
+    out = result.stdout.strip().split("\n")[-1].split(";")
+    num_iter = int(out[0])
+    values = np.array([float(x) for x in out[1:]])
+    return num_iter, values
+
+def run_octa_cli(mode: int, values: np.ndarray, d: np.ndarray):
+    values = np.asarray(values).flatten()
+
+    if values.size != 9:
+        raise ValueError(f"Expected 9 values, got {values.size}")
+
+    parts = [str(mode)]
+
+    if mode == 1:
+        parts.extend(map(str, d))
+
+    parts.extend(map(str, values))
+
+    arg = ";".join(parts)
+
+    result = subprocess.run(
+        [executable_path_octa, arg],
+        capture_output=True,
+        text=True
+    )
+
+    if mode == 1:
+        print("===== octa =====")
+        print("in:", result.args)
+        print("out:", result.stdout)
+        print("===== octa =====")
+
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr)
+
+    out = result.stdout.strip().split("\n")[-1].split(";")
     num_iter = int(out[0])
     values = np.array([float(x) for x in out[1:]])
     return num_iter, values
@@ -93,19 +135,19 @@ app.layout = html.Div([
 
             html.Div([
                 html.Label("Rotate x"),
-                dcc.Slider(id="alpha", min=-0.5 * math.pi, max=0.5 * math.pi, step=0.01, value=0),
+                dcc.Slider(id="alpha", min=-0.25 * math.pi, max=0.25 * math.pi, step=0.01, value=0),
                 dcc.Input(id="alpha_input", type="number", value=0),
             ]),
 
             html.Div([
                 html.Label("Rotate y"),
-                dcc.Slider(id="beta", min=-0.5 * math.pi, max=0.5 * math.pi, step=0.01, value=0),
+                dcc.Slider(id="beta", min=-0.25 * math.pi, max=0.25 * math.pi, step=0.01, value=0),
                 dcc.Input(id="beta_input", type="number", value=0),
             ]),
 
             html.Div([
                 html.Label("Rotate z"),
-                dcc.Slider(id="gamma", min=-0.5 * math.pi, max=0.5 * math.pi, step=0.01, value=0),
+                dcc.Slider(id="gamma", min=-0.25 * math.pi, max=0.25 * math.pi, step=0.01, value=0),
                 dcc.Input(id="gamma_input", type="number", value=0),
             ]),
 
@@ -163,7 +205,9 @@ for slider_id in ["l_x", "l_y", "l_z", "alpha", "beta", "gamma"]:
     Input("gamma_input", "value"),
 )
 def compute_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
-    coordinates = generate_coordinates(l_x, l_y, l_z, alpha, beta, gamma)
+    odeco_coords = generate_coordinates(l_x, l_y, l_z, alpha, beta, gamma)
+    octa_coords = generate_octa_coordinates(alpha, beta, gamma)
+
     v0 = np.array([1.1 * l_x, 0, 0])
     v1 = np.array([0, 1.1* l_y, 0])
     v2 = np.array([0, 0, 1.1 * l_z])
@@ -172,7 +216,7 @@ def compute_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
     v1 = rotate_3(v1, alpha, beta, gamma)
     v2 = rotate_3(v2, alpha, beta, gamma)
 
-    return {'coords': coordinates.tolist(), 'basis': [v0, v1, v2]}
+    return {'odeco_coords': odeco_coords.tolist(), 'octa_coords': octa_coords.tolist(), 'basis': [v0, v1, v2]}
 
 @callback(
     Output({"type": "override-coord", "index": ALL}, "value"),
@@ -181,7 +225,7 @@ def compute_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
 def sync_override_boxes(coords):
     if coords is None:
         raise exceptions.PreventUpdate
-    return coords['coords']
+    return coords['odeco_coords']
 
 @callback(
     Output("input-plot", "figure"),
@@ -193,15 +237,15 @@ def update_input_plot(coords, overrides):
     if coords is None:
         raise exceptions.PreventUpdate
 
-    final = np.array(coords['coords'])
+    odeco_coords = np.array(coords['odeco_coords'])
     basis = np.array(coords['basis'])  # shape should be (3, 3)
 
     if overrides and any(v is not None for v in overrides):
         for i, v in enumerate(overrides):
             if v is not None:
-                final[i] = v
+                odeco_coords[i] = v
 
-    sh_values, x, y, z = generate_sh_values_from_coordinates(final)
+    sh_values, x, y, z = generate_sh_values_from_coordinates(odeco_coords)
 
     fig = go.Figure()
 
@@ -269,21 +313,67 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
     if coords is None or z_aligned is None:
         raise exceptions.PreventUpdate
 
-    final = np.array(coords['coords'])
+    odeco_coords = np.array(coords['odeco_coords'])
+    octa_coords = np.array(coords['octa_coords'])
     mode = int('z_proj' in z_aligned)
     d = np.array([d_x, d_y, d_z])
 
     if overrides and any(v is not None for v in overrides):
         for i, v in enumerate(overrides):
             if v is not None:
-                final[i] = v
+                odeco_coords[i] = v
 
     start = time()
-    num_iter, projection = run_cli(mode, final, d)
+
+    num_iter, projection = run_cli(mode, odeco_coords, d)
+
     end = time()
     sh_values, x, y, z = generate_sh_values_from_coordinates(projection)
 
-    fig = go.Figure(data=[go.Surface(x=x, y=y, z=z, surfacecolor=sh_values)])
+    fig = go.Figure()
+
+    # Surface plot
+    fig.add_trace(
+        go.Surface(
+            x=x,
+            y=y,
+            z=z,
+            surfacecolor=sh_values,
+            opacity=1
+        )
+    )
+
+    num_iter, octa_projection = run_octa_cli(mode, octa_coords, d)
+
+    sh_values, x, y, z = generate_sh_values_from_coordinates_octa(octa_projection)
+
+    fig.add_trace(
+            go.Surface(
+                x=x,
+                y=y,
+                z=z,
+                surfacecolor=np.zeros_like(sh_values),
+                opacity=0.5
+            )
+        )  
+
+    if (mode == 1):
+
+        fig.add_trace(
+                go.Scatter3d(
+                    x=[0, d_x],
+                    y=[0, d_y],
+                    z=[0, d_z],
+                    mode="lines+markers",
+                    line=dict(
+                        width=6
+                    ),
+                    marker=dict(
+                        size=4
+                    )
+                )
+        )
+
     return fig, f"{num_iter} iterations | {end - start:.2f} s"
 
 

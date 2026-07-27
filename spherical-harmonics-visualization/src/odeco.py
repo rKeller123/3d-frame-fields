@@ -25,7 +25,7 @@ def canonical_odeco(l_x, l_y, l_z):
 
     assert len(a_0) == 15, "odeco tensor should have dimension 15"
 
-    return a_0
+    return np.array(a_0)
 
 def generate_sh_values_from_coordinates(coordinates):
     n = 100
