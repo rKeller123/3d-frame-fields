@@ -41,19 +41,27 @@ def run_cli(mode: int, values: np.ndarray, d: np.ndarray):
         text=True
     )
 
-    if mode == 1:
-        print("===== odeco =====")
-        print("in:", result.args)
-        print("out:", result.stdout)
-        print("===== odeco =====")
+    print(f"===== odeco mode {mode} =====")
+    print("in:", result.args)
+    print("out:", result.stdout)
+    print("===== odeco =====")
 
     if result.returncode != 0:
         raise RuntimeError(result.stderr)
 
     out = result.stdout.strip().split("\n")[-1].split(";")
     num_iter = int(out[0])
-    values = np.array([float(x) for x in out[1:]])
-    return num_iter, values
+    values = np.array([float(x) for x in out[1:16]])
+    ax1 = np.array([float(x) for x in out[16:19]])
+    ax2 = np.array([float(x) for x in out[19:22]])
+    ax3 = np.array([float(x) for x in out[22:25]])
+    scales = np.array([float(x) for x in out[25:28]])
+    assert values.size == 15
+    assert ax1.size == 3
+    assert ax2.size == 3
+    assert ax3.size == 3
+    assert scales.size == 3
+    return num_iter, values, [ax1, ax2, ax3], scales
 
 def run_octa_cli(mode: int, values: np.ndarray, d: np.ndarray):
     values = np.asarray(values).flatten()
@@ -64,6 +72,8 @@ def run_octa_cli(mode: int, values: np.ndarray, d: np.ndarray):
     parts = [str(mode)]
 
     if mode == 1:
+        d[0] *= -1
+        d[1] *= -1
         parts.extend(map(str, d))
 
     parts.extend(map(str, values))
@@ -76,11 +86,10 @@ def run_octa_cli(mode: int, values: np.ndarray, d: np.ndarray):
         text=True
     )
 
-    if mode == 1:
-        print("===== octa =====")
-        print("in:", result.args)
-        print("out:", result.stdout)
-        print("===== octa =====")
+    print(f"===== octa mode {mode} =====")
+    print("in:", result.args)
+    print("out:", result.stdout)
+    print("===== octa =====")
 
     if result.returncode != 0:
         raise RuntimeError(result.stderr)
@@ -89,6 +98,50 @@ def run_octa_cli(mode: int, values: np.ndarray, d: np.ndarray):
     num_iter = int(out[0])
     values = np.array([float(x) for x in out[1:]])
     return num_iter, values
+
+def compute_odeco_coords(l_x, l_y, l_z, alpha, beta, gamma):
+    values = np.array([alpha, beta, gamma, l_x, l_y, l_z])
+
+    mode = 2
+    parts = [str(mode)]
+    parts.extend(map(str, values))
+    arg = ";".join(parts)
+
+    result = subprocess.run(
+        [executable_path, arg],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr)
+
+    out = result.stdout.strip().split("\n")[-1].split(";")
+    num_iter = int(out[0])
+    values = np.array([float(x) for x in out[1:16]])
+    return values
+
+def compute_octa_coords(alpha, beta, gamma):
+    values = np.array([-alpha, -beta, gamma])
+
+    mode = 2
+    parts = [str(mode)]
+    parts.extend(map(str, values))
+    arg = ";".join(parts)
+
+    result = subprocess.run(
+        [executable_path_octa, arg],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr)
+
+    out = result.stdout.strip().split("\n")[-1].split(";")
+    num_iter = int(out[0])
+    values = np.array([float(x) for x in out[1:]])
+    return values
 
 app = Dash()
 
@@ -135,19 +188,19 @@ app.layout = html.Div([
 
             html.Div([
                 html.Label("Rotate x"),
-                dcc.Slider(id="alpha", min=-0.25 * math.pi, max=0.25 * math.pi, step=0.01, value=0),
+                dcc.Slider(id="alpha", min=-0.25 * math.pi, max=0.5 * math.pi, step=0.01, value=0),
                 dcc.Input(id="alpha_input", type="number", value=0),
             ]),
 
             html.Div([
                 html.Label("Rotate y"),
-                dcc.Slider(id="beta", min=-0.25 * math.pi, max=0.25 * math.pi, step=0.01, value=0),
+                dcc.Slider(id="beta", min=-0.25 * math.pi, max=0.5 * math.pi, step=0.01, value=0),
                 dcc.Input(id="beta_input", type="number", value=0),
             ]),
 
             html.Div([
                 html.Label("Rotate z"),
-                dcc.Slider(id="gamma", min=-0.25 * math.pi, max=0.25 * math.pi, step=0.01, value=0),
+                dcc.Slider(id="gamma", min=-0.25 * math.pi, max=0.5 * math.pi, step=0.01, value=0),
                 dcc.Input(id="gamma_input", type="number", value=0),
             ]),
 
@@ -205,8 +258,11 @@ for slider_id in ["l_x", "l_y", "l_z", "alpha", "beta", "gamma"]:
     Input("gamma_input", "value"),
 )
 def compute_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
-    odeco_coords = generate_coordinates(l_x, l_y, l_z, alpha, beta, gamma)
-    octa_coords = generate_octa_coordinates(alpha, beta, gamma)
+    odeco_coords = compute_odeco_coords(l_x, l_y, l_z, alpha, beta, gamma)
+    octa_coords = compute_octa_coords(alpha, beta, gamma)
+
+    assert odeco_coords.size == 15
+    assert octa_coords.size == 9
 
     v0 = np.array([1.1 * l_x, 0, 0])
     v1 = np.array([0, 1.1* l_y, 0])
@@ -238,7 +294,12 @@ def update_input_plot(coords, overrides):
         raise exceptions.PreventUpdate
 
     odeco_coords = np.array(coords['odeco_coords'])
-    basis = np.array(coords['basis'])  # shape should be (3, 3)
+    octa_coords = np.array(coords['octa_coords'])
+    basis = np.array(coords['basis'])
+
+    assert odeco_coords.size == 15, f"actual: {odeco_coords.size}"
+    assert octa_coords.size == 9, f"actual: {octa_coords.size}"
+    assert basis.shape == (3, 3), f"actual: {basis.shape}"
 
     if overrides and any(v is not None for v in overrides):
         for i, v in enumerate(overrides):
@@ -257,6 +318,18 @@ def update_input_plot(coords, overrides):
             z=z,
             surfacecolor=sh_values,
             opacity=1
+        )
+    )
+
+    sh_values, x, y, z = generate_sh_values_from_coordinates_octa(octa_coords)
+
+    fig.add_trace(
+        go.Surface(
+            x=x,
+            y=y,
+            z=z,
+            surfacecolor=np.zeros_like(sh_values),
+            opacity=0.5
         )
     )
 
@@ -325,7 +398,8 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
 
     start = time()
 
-    num_iter, projection = run_cli(mode, odeco_coords, d)
+    num_iter, projection, axes, scales = run_cli(mode, odeco_coords, d)
+    assert projection.size == 15, f"actual size: {projection.size}"
 
     end = time()
     sh_values, x, y, z = generate_sh_values_from_coordinates(projection)
@@ -344,6 +418,7 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
     )
 
     num_iter, octa_projection = run_octa_cli(mode, octa_coords, d)
+    assert octa_projection.size == 9, f"actual size: {octa_projection.size}"
 
     sh_values, x, y, z = generate_sh_values_from_coordinates_octa(octa_projection)
 
@@ -355,7 +430,27 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
                 surfacecolor=np.zeros_like(sh_values),
                 opacity=0.5
             )
-        )  
+        )
+
+    # scatter plot for the axes
+    for i in range(3):
+        ax = (0.1 + scales[i]) * axes[i]
+
+        fig.add_trace(
+                go.Scatter3d(
+                    x=[0, ax[0]],
+                    y=[0, ax[1]],
+                    z=[0, ax[2]],
+                    mode="lines+markers",
+                    line=dict(
+                        width=6
+                    ),
+                    marker=dict(
+                        size=4
+                    )
+                )
+        )
+
 
     if (mode == 1):
 
