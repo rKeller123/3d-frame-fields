@@ -4,12 +4,9 @@ import os
 import platform
 import math
 from time import time
-from octahedral import generate_sh_values_from_coordinates_octa, generate_octa_coordinates
 
 PLATFORM = platform.system()
 executable_path = os.path.abspath("../snail_field_cxx/build/examples/cli")
-# executable_path = os.path.abspath("./3d-odeco-frame-fields/build/cli")
-executable_path_octa = os.path.abspath("../snail_field_cxx_main/build/examples/cli")
 if (PLATFORM == "Windows"):
     executable_path = os.path.abspath("./3d-odeco-frame-fields/out/build/x64-debug/cli.exe")
 
@@ -63,42 +60,6 @@ def run_cli(mode: int, values: np.ndarray, d: np.ndarray):
     assert scales.size == 3
     return num_iter, values, [ax1, ax2, ax3], scales
 
-def run_octa_cli(mode: int, values: np.ndarray, d: np.ndarray):
-    values = np.asarray(values).flatten()
-
-    if values.size != 9:
-        raise ValueError(f"Expected 9 values, got {values.size}")
-
-    parts = [str(mode)]
-
-    if mode == 1:
-        d[0] *= -1
-        d[1] *= -1
-        parts.extend(map(str, d))
-
-    parts.extend(map(str, values))
-
-    arg = ";".join(parts)
-
-    result = subprocess.run(
-        [executable_path_octa, arg],
-        capture_output=True,
-        text=True
-    )
-
-    print(f"===== octa mode {mode} =====")
-    print("in:", result.args)
-    print("out:", result.stdout)
-    print("===== octa =====")
-
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr)
-
-    out = result.stdout.strip().split("\n")[-1].split(";")
-    num_iter = int(out[0])
-    values = np.array([float(x) for x in out[1:]])
-    return num_iter, values
-
 def compute_odeco_coords(l_x, l_y, l_z, alpha, beta, gamma):
     values = np.array([alpha, beta, gamma, l_x, l_y, l_z])
 
@@ -119,28 +80,6 @@ def compute_odeco_coords(l_x, l_y, l_z, alpha, beta, gamma):
     out = result.stdout.strip().split("\n")[-1].split(";")
     num_iter = int(out[0])
     values = np.array([float(x) for x in out[1:16]])
-    return values
-
-def compute_octa_coords(alpha, beta, gamma):
-    values = np.array([-alpha, -beta, gamma])
-
-    mode = 2
-    parts = [str(mode)]
-    parts.extend(map(str, values))
-    arg = ";".join(parts)
-
-    result = subprocess.run(
-        [executable_path_octa, arg],
-        capture_output=True,
-        text=True
-    )
-
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr)
-
-    out = result.stdout.strip().split("\n")[-1].split(";")
-    num_iter = int(out[0])
-    values = np.array([float(x) for x in out[1:]])
     return values
 
 app = Dash()
@@ -259,10 +198,7 @@ for slider_id in ["l_x", "l_y", "l_z", "alpha", "beta", "gamma"]:
 )
 def compute_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
     odeco_coords = compute_odeco_coords(l_x, l_y, l_z, alpha, beta, gamma)
-    octa_coords = compute_octa_coords(alpha, beta, gamma)
-
     assert odeco_coords.size == 15
-    assert octa_coords.size == 9
 
     v0 = np.array([1.1 * l_x, 0, 0])
     v1 = np.array([0, 1.1* l_y, 0])
@@ -272,7 +208,7 @@ def compute_coordinates(l_x, l_y, l_z, alpha, beta, gamma):
     v1 = rotate_3(v1, alpha, beta, gamma)
     v2 = rotate_3(v2, alpha, beta, gamma)
 
-    return {'odeco_coords': odeco_coords.tolist(), 'octa_coords': octa_coords.tolist(), 'basis': [v0, v1, v2]}
+    return {'odeco_coords': odeco_coords.tolist(), 'basis': [v0, v1, v2]}
 
 @callback(
     Output({"type": "override-coord", "index": ALL}, "value"),
@@ -294,11 +230,9 @@ def update_input_plot(coords, overrides):
         raise exceptions.PreventUpdate
 
     odeco_coords = np.array(coords['odeco_coords'])
-    octa_coords = np.array(coords['octa_coords'])
     basis = np.array(coords['basis'])
 
     assert odeco_coords.size == 15, f"actual: {odeco_coords.size}"
-    assert octa_coords.size == 9, f"actual: {octa_coords.size}"
     assert basis.shape == (3, 3), f"actual: {basis.shape}"
 
     if overrides and any(v is not None for v in overrides):
@@ -320,19 +254,6 @@ def update_input_plot(coords, overrides):
             opacity=1
         )
     )
-
-    sh_values, x, y, z = generate_sh_values_from_coordinates_octa(octa_coords)
-
-    fig.add_trace(
-        go.Surface(
-            x=x,
-            y=y,
-            z=z,
-            surfacecolor=np.zeros_like(sh_values),
-            opacity=0.5
-        )
-    )
-
     # Draw basis vectors
     colors = ["red", "green", "blue"]
     labels = ["v0", "v1", "v2"]
@@ -387,7 +308,6 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
         raise exceptions.PreventUpdate
 
     odeco_coords = np.array(coords['odeco_coords'])
-    octa_coords = np.array(coords['octa_coords'])
     mode = int('z_proj' in z_aligned)
     d = np.array([d_x, d_y, d_z])
 
@@ -416,21 +336,6 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
             opacity=1
         )
     )
-
-    num_iter, octa_projection = run_octa_cli(mode, octa_coords, d)
-    assert octa_projection.size == 9, f"actual size: {octa_projection.size}"
-
-    sh_values, x, y, z = generate_sh_values_from_coordinates_octa(octa_projection)
-
-    fig.add_trace(
-            go.Surface(
-                x=x,
-                y=y,
-                z=z,
-                surfacecolor=np.zeros_like(sh_values),
-                opacity=0.5
-            )
-        )
 
     # scatter plot for the axes
     for i in range(3):
