@@ -8,7 +8,7 @@ from time import time
 PLATFORM = platform.system()
 executable_path = os.path.abspath("../snail_field_cxx/build/examples/cli")
 if (PLATFORM == "Windows"):
-    executable_path = os.path.abspath("./3d-odeco-frame-fields/out/build/x64-debug/cli.exe")
+    executable_path = os.path.abspath("../snail_field_cxx/out/build/x64-Debug/examples/cli.exe")
 
 
 import plotly.graph_objects as go
