@@ -4,7 +4,7 @@ import pyvista as pv
 from odeco import canonical_odeco, generate_sh_values_from_coordinates
 from rotations import rotate_z, rotate_x
 
-n = 3
+n = 5
 
 bases = {
     "octa": rotate_x(np.pi / 2) @ np.array(
@@ -32,7 +32,6 @@ def compute_odeco_set(base, n):
 
 def add_odeco_surface(plotter, coords, opacity=1.0):
     sh_values, x, y, z = generate_sh_values_from_coordinates(coords)
-    print("values generated")
     grid = pv.StructuredGrid(x, y, z)
     # StructuredGrid flattens points in Fortran order; match that for the scalars.
     grid["sh_values"] = np.asarray(sh_values).ravel(order="F")
@@ -40,7 +39,7 @@ def add_odeco_surface(plotter, coords, opacity=1.0):
         grid,
         scalars="sh_values",
         opacity=opacity,
-        cmap="inferno",
+        cmap="viridis",
         show_scalar_bar=False,
         smooth_shading=True,
     )
@@ -61,4 +60,4 @@ for row, (name, base) in enumerate(bases.items()):
     add_odeco_surface(plotter, average, opacity=1.0)
 
 plotter.link_views()
-plotter.show()
+plotter.show(screenshot="./average.png")
