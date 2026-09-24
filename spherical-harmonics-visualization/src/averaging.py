@@ -1,16 +1,18 @@
 import numpy as np
 import pyvista as pv
 
+from tqdm import tqdm
+
 from odeco import canonical_odeco, generate_sh_values_from_coordinates
 from rotations import rotate_z, rotate_x
 
-n = 5
+n = 1000
 
 bases = {
     "octa": rotate_x(np.pi / 2) @ np.array(
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.6, 0, 0, 0, 0]
     ),
-    # "odeco": canonical_odeco(1, 1, 1),
+    "odeco": canonical_odeco(1, 1, 1),
     "odeco spinner": rotate_x(np.pi / 2) @ np.array(
         [1, 0, 0, 0.2, 0, 0, 0, 0, 0, 0, 0.6, 0, 0, 0, 0]
     ),
@@ -47,17 +49,23 @@ def add_odeco_surface(plotter, coords, opacity=1.0):
 
 plotter = pv.Plotter(shape=(len(bases), 2), window_size=(1200, 600 * len(bases)))
 
-for row, (name, base) in enumerate(bases.items()):
-    odeco_coords, average = compute_odeco_set(base, n)
+total = len(bases) * (n + 1)
 
-    plotter.subplot(row, 0)
-    plotter.add_text(f"{name} - individual odecos", font_size=10)
-    for coords in odeco_coords:
-        add_odeco_surface(plotter, coords, opacity=0.3)
+with tqdm(total=total, desc="Odecos") as pbar:
+    for row, (name, base) in enumerate(bases.items()):
+        pbar.set_postfix(base=name)
 
-    plotter.subplot(row, 1)
-    plotter.add_text(f"{name} - average", font_size=10)
-    add_odeco_surface(plotter, average, opacity=1.0)
+        odeco_coords, average = compute_odeco_set(base, n)
 
+        plotter.subplot(row, 0)
+        plotter.add_text(f"{name} - individual odecos", font_size=10)
+        for coords in odeco_coords:
+            add_odeco_surface(plotter, coords, opacity=0.3)
+            pbar.update(1)
+
+        plotter.subplot(row, 1)
+        plotter.add_text(f"{name} - average", font_size=10)
+        add_odeco_surface(plotter, average, opacity=1.0)
+        pbar.update(1)
 plotter.link_views()
 plotter.show(screenshot="./average.png")
