@@ -7,6 +7,7 @@ from time import time
 
 PLATFORM = platform.system()
 executable_path = os.path.abspath("../snail_field_cxx/build/examples/cli")
+scaled_octa_path = os.path.abspath("../snail_field_cxx_scaled_octa/build/examples/cli")
 if (PLATFORM == "Windows"):
     executable_path = os.path.abspath("../snail_field_cxx/out/build/x64-Debug/examples/cli.exe")
 
@@ -15,6 +16,7 @@ import plotly.graph_objects as go
 from dash import Dash, html, dcc, callback, Output, Input, exceptions, ALL
 
 from odeco import generate_sh_values_from_coordinates, generate_coordinates
+from octahedral import generate_sh_values_from_coordinates_octa
 from rotations import rotate_3
 
 def run_cli(mode: int, values: np.ndarray, d: np.ndarray):
@@ -59,6 +61,37 @@ def run_cli(mode: int, values: np.ndarray, d: np.ndarray):
     assert ax3.size == 3
     assert scales.size == 3
     return num_iter, values, [ax1, ax2, ax3], scales
+
+def run_octa_cli(mode: int, values: np.ndarray):
+    assert mode == 0
+    if values.size != 9:
+        raise ValueError(f"Expected 15 values, got {values.size}")
+
+    parts = [str(mode)]
+
+    parts.extend(map(str, values))
+
+    arg = ";".join(parts)
+
+    result = subprocess.run(
+        [scaled_octa_path, arg],
+        capture_output=True,
+        text=True
+    )
+
+    print(f"===== scaled octa =====")
+    print("in:", result.args)
+    print("out:", result.stdout)
+    print("===== scaled octa =====")
+
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr)
+
+    out = result.stdout.strip().split("\n")[-1].split(";")
+    num_iter = int(out[0])
+    values = np.array([float(x) for x in out[1:10]])
+    assert values.size == 9
+    return num_iter, values
 
 def compute_odeco_coords(l_x, l_y, l_z, alpha, beta, gamma):
     values = np.array([alpha, beta, gamma, l_x, l_y, l_z])
@@ -333,7 +366,7 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
             y=y,
             z=z,
             surfacecolor=sh_values,
-            opacity=1
+            opacity=0.5
         )
     )
 
@@ -356,6 +389,21 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
                 )
         )
 
+    mode = 0
+    octa_coords = odeco_coords[6:]
+    num_iter, projection = run_octa_cli(mode, octa_coords)
+
+    sh_values, x, y, z = generate_sh_values_from_coordinates_octa(projection)
+
+    fig.add_trace(
+        go.Surface(
+            x=x,
+            y=y,
+            z=z,
+            surfacecolor=np.zeros_like(sh_values),
+            opacity=1
+        )
+    )
 
     if (mode == 1):
 

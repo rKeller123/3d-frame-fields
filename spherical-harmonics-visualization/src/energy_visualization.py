@@ -13,10 +13,10 @@ import matplotlib.pyplot as plt
 # ---------------------------------------------------------------------------
 # File locations (same paths as the original snippet)
 # ---------------------------------------------------------------------------
-odeco_sphere_path = os.path.abspath("../snail_field_cxx/build/sphere_energy.txt")
-odeco_torus_path = os.path.abspath("../snail_field_cxx/build/torus_energy.txt")
-octa_sphere_path = os.path.abspath("../snail_field_cxx_main/build/sphere_energy.txt")
-octa_torus_path = os.path.abspath("../snail_field_cxx_main/build/torus_energy.txt")
+odeco_sphere_path = os.path.abspath("./energies/sphere_energy_odeco.txt")
+odeco_torus_path = os.path.abspath("./energies/torus_energy_odeco.txt")
+octa_sphere_path = os.path.abspath("./energies/sphere_energy_octa.txt")
+octa_torus_path = os.path.abspath("./energies/torus_energy_octa.txt")
 
 FILES = {
     "odeco sphere": odeco_sphere_path,

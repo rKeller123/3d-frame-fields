@@ -40,7 +40,7 @@ def generate_sh_values_from_coordinates_octa(coordinates):
     sh_values = sh_values.reshape((n, n))
 
     # Compute cartesian coordinates
-    offset = 0.8
+    offset = 0
     r = offset + sh_values
 
     x = r * np.sin(theta_grid) * np.cos(phi_grid)
