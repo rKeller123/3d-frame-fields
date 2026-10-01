@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from odeco import generate_sh_values_from_coordinates
 
-CLI = "../snail_field_cxx/build/examples/test"  # the unmodified C++ program
+CLI = "../snail_field_cxx/build/examples/averaging"  # the unmodified C++ program
 NUM = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 
 LINK_VIEWS = True

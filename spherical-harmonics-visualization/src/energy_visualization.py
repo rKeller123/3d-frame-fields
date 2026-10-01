@@ -68,7 +68,6 @@ def main() -> None:
     out_path = "energy_plot.png"
     plt.savefig(out_path, dpi=150)
     print(f"Saved plot to {out_path}")
-    plt.show()
 
 
 if __name__ == "__main__":
