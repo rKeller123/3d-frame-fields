@@ -400,8 +400,8 @@ def update_output(_, coords, overrides, z_aligned, d_x, d_y, d_z):
             x=x,
             y=y,
             z=z,
-            surfacecolor=np.zeros_like(sh_values),
-            opacity=1
+            surfacecolor=sh_values,
+            opacity=0.5
         )
     )
 
