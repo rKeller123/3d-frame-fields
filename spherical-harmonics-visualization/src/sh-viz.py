@@ -20,7 +20,7 @@ from spherical_harmonics import sph_harm_real
 # ----------------------------------------------------------------- settings
 L_MAX = 3
 N_THETA, N_PHI = 120, 240          # mesh resolution
-CMAP_NAME = "viridis"
+CMAP_NAME = "plasma"
 FIG_WIDTH, FIG_HEIGHT = 7.5, 6.3   # inches; design at final printed size
 VIEW_ELEV, VIEW_AZIM = 20, -55
 ZOOM = 1.5                         # enlarges each 3D panel within its cell
